@@ -1,0 +1,46 @@
+{
+  "exp_a": {
+    "hybrid_transactions_per_day": 24,
+    "full_transactions_per_day": 24.53928256159217,
+    "reduction_factor": 1.022470106733007,
+    "hybrid_gas_per_day": 3600000,
+    "full_gas_per_day": 3680892.3842388256,
+    "gas_savings_percent": 2.1976296993956645
+  },
+  "exp_b": {
+    "overall_mae_kw": 362.49157272309617,
+    "overall_mae_pct": 18.12457863615481,
+    "overall_rmse_kw": 819.8728183499684,
+    "overall_rmse_pct": 40.993640917498425,
+    "r_squared": -193677.11821060715,
+    "fidelity_score": "Medium"
+  },
+  "exp_c": [
+    {
+      "model": "linear",
+      "mae": 0.393474440062183,
+      "rmse": 0.6995980031421376,
+      "mape": 435.143953937145
+    },
+    {
+      "model": "random_forest",
+      "mae": 0.1630784591305697,
+      "rmse": 0.4041073536104294,
+      "mape": 143.20133014582862
+    }
+  ],
+  "exp_d": {
+    "1-min": {
+      "interval_hours": 0.016666666666666666,
+      "approx_hashes_per_day": 1440
+    },
+    "15-min": {
+      "interval_hours": 0.25,
+      "approx_hashes_per_day": 96
+    },
+    "1-hour": {
+      "interval_hours": 1,
+      "approx_hashes_per_day": 24
+    }
+  }
+}

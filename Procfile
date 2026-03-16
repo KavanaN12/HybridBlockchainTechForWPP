@@ -1,0 +1,2 @@
+# Procfile for Heroku
+web: streamlit run dashboard/app.py --server.port=$PORT --server.headless=true

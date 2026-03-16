@@ -1,0 +1,5 @@
+{"timestamp": "2026-03-10T09:39:08.207693", "hour": 0, "forecast_kwh": 3.4808698959716646, "tokens_minted": 3480, "auction_id": 1, "auction_started": true, "errors": []}
+{"timestamp": "2026-03-10T09:45:59.943008", "hour": 0, "forecast_kwh": 1.8835912400373367, "tokens_minted": 1883, "auction_id": 1, "auction_started": true, "errors": []}
+{"timestamp": "2026-03-10T09:46:03.962338", "hour": 0, "forecast_kwh": 3.7634173475801314, "tokens_minted": 3763, "auction_id": 1, "auction_started": true, "errors": []}
+{"timestamp": "2026-03-10T09:46:08.081531", "hour": 0, "forecast_kwh": 1.133743723244875, "tokens_minted": 1133, "auction_id": 1, "auction_started": true, "errors": []}
+{"timestamp": "2026-03-10T09:46:12.220467", "hour": 0, "forecast_kwh": 2.432294434054631, "tokens_minted": 2432, "auction_id": 1, "auction_started": true, "errors": []}

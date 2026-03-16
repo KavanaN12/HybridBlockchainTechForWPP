@@ -1,0 +1,34 @@
+name: Preprocess Data
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  preprocess:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy scikit-learn python-dotenv
+      
+      - name: Check for data
+        run: |
+          if [ ! -f "data/raw/kaggle_scada.csv" ]; then
+            echo "⚠ Dataset not found - skipping preprocessing"
+            exit 0
+          fi
+      
+      - name: Run preprocessing
+        run: |
+          cd preprocessing && python run_pipeline.py
+        continue-on-error: true

@@ -1,0 +1,69 @@
+# ✅ BLOCKCHAIN QUICK CHECKLIST
+
+## 🚀 RUN NOW (5 Steps - 30 minutes total)
+
+### TERMINAL 1 - Ganache (Keep Running)
+```
+[ ] npm install -g ganache
+[ ] cd d:\WPPDigitalTwin\blockchain
+[ ] .\start-ganache.ps1
+✓ OUTPUT: "listening on 127.0.0.1:8545"
+```
+
+### TERMINAL 2 - Smart Contract
+```
+[ ] cd d:\WPPDigitalTwin\blockchain
+[ ] npm install
+[ ] npx hardhat compile
+[ ] npx hardhat run scripts/deploy.js --network localhost
+✓ SAVE CONTRACT ADDRESS
+```
+
+### TERMINAL 3 - Full Pipeline
+```
+[ ] cd d:\WPPDigitalTwin
+[ ] pytest tests/ -v
+[ ] python twin/validate_twin.py
+[ ] python forecasting/train_models.py
+[ ] python sync/blockchain_sync.py          ← NEW (blockchain)
+[ ] python experiments/run_all_experiments.py ← NOW INCLUDES A & D
+```
+
+---
+
+## 📊 What Gets Created
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `blockchain/contracts/DataAnchor.sol` | Smart contract | ✅ Ready |
+| `blockchain/scripts/deploy.js` | Deployment script | ✅ Ready |
+| `blockchain/hardhat.config.js` | Hardhat config | ✅ Ready |
+| `blockchain/package.json` | Dependencies | ✅ Ready |
+| `blockchain/start-ganache.ps1` | Ganache launcher | ✅ Ready |
+| `BLOCKCHAIN_SETUP.md` | Full guide | ✅ Ready |
+| `BLOCKCHAIN_EXECUTION.md` | Step-by-step | ✅ Ready |
+
+---
+
+## 🎯 Success Indicators
+
+✅ Ganache starts: `listening on 127.0.0.1:8545`
+✅ Contract compiles: `Compilation finished successfully`
+✅ Contract deploys: `✅ DataAnchor deployed successfully!`
+✅ Hashes stored: `Hour 1: ✓ Hash submitted`
+✅ Experiments A & D: `Blockchain Scalability - ✓ Complete`
+
+---
+
+## 📝 Paper Requirements Covered
+
+✅ Blockchain architecture diagram
+✅ Smart contract implementation
+✅ Deployment & gas costs
+✅ Hash storage & verification
+✅ Tamper detection proof
+✅ Full reproducibility
+
+---
+
+**READY TO START?** → Follow STEP 1-5 in BLOCKCHAIN_EXECUTION.md

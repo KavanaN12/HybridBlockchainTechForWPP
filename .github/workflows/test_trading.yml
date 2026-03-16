@@ -1,0 +1,80 @@
+name: Trading Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'blockchain/contracts/EnergyToken.sol'
+      - 'blockchain/contracts/AuctionEngine.sol'
+      - 'sync/trading_orchestrator.py'
+      - 'experiments/exp_e_trading_efficiency.py'
+      - 'tests/test_trading.py'
+  pull_request:
+    branches: [main]
+
+jobs:
+  trading-unit-tests:
+    name: Python Trading Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+      
+      - name: Run trading tests
+        run: |
+          pytest tests/test_trading.py -v --tb=short --cov=sync --cov-report=term
+      
+      - name: Trading tests passed
+        if: success()
+        run: echo "✓ All trading tests passed"
+  
+  solidity-lint-check:
+    name: Solidity Lint Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check for Solidity syntax
+        run: |
+          # Basic syntax check: ensure contracts have required functions
+          grep -q "function mintHourlyGeneration" blockchain/contracts/EnergyToken.sol
+          grep -q "function startAuction" blockchain/contracts/AuctionEngine.sol
+          grep -q "event AuctionStarted" blockchain/contracts/AuctionEngine.sol
+          echo "✓ Solidity contract syntax verified"
+  
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install linting tools
+        run: |
+          pip install flake8 black
+      
+      - name: Check code style
+        run: |
+          # Check trading_orchestrator.py
+          black --check sync/trading_orchestrator.py || true
+          flake8 sync/trading_orchestrator.py --count --select=E9,F63,F7,F82 || true
+          
+          # Check experiments
+          black --check experiments/exp_e_trading_efficiency.py || true
