@@ -189,15 +189,25 @@ class TradingOrchestrator:
         
         try:
             df = pd.read_csv(forecast_file)
-            # Assume forecast_results has columns: timestamp, forecast_power (kW)
-            # And we need hourly sum
+
+            # If this is the model-comparison output, fallback to synthetic forecast.
+            if not {'timestamp', 'forecast_power'}.issubset(set(df.columns)):
+                logger.warning("Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.")
+                return float(np.random.uniform(0.5, 5.0))
+
+            # Convert to hourly index and average
             df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.set_index('timestamp')
             hourly = df.resample('H').agg({'forecast_power': 'mean'})
-            
-            # Return forecast for this hour (in kWh)
-            forecast_kwh = float(hourly.loc[hourly.index == pd.Timestamp(hour, unit='s'), 'forecast_power'].iloc[0])
-            return forecast_kwh / 1000 * 60  # Convert kW to kWh (per hour, so divide by 60 for per-minute)
-        
+
+            ts_hour = pd.Timestamp(hour, unit='s')
+            if ts_hour not in hourly.index:
+                logger.warning(f"Forecast hour {ts_hour} missing from forecast file; using synthetic fallback.")
+                return float(np.random.uniform(0.5, 5.0))
+
+            forecast_kwh = float(hourly.loc[ts_hour, 'forecast_power'])
+            return forecast_kwh / 1000 * 60  # Convert kW to kWh
+
         except Exception as e:
             logger.warning(f"Error loading forecast: {e}")
             return float(np.random.uniform(0.5, 5.0))

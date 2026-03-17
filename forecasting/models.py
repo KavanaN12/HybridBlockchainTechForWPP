@@ -104,6 +104,25 @@ class ForecastingEngine:
                 pickle.dump(model, f)
             logger.info(f"Saved {name} to {path}")
 
+    def load_models(self, checkpoint_dir="forecasting/models_checkpoint") -> bool:
+        """Load models from checkpoint directory."""
+        model_dir = Path(checkpoint_dir)
+        if not model_dir.exists():
+            logger.warning(f"No checkpoint dir found at {checkpoint_dir}")
+            return False
+
+        loaded = False
+        for model_file in model_dir.glob("*_model.pkl"):
+            with open(model_file, 'rb') as f:
+                model_name = model_file.stem.replace("_model", "")
+                self.models[model_name] = pickle.load(f)
+                loaded = True
+                logger.info(f"Loaded model: {model_name}")
+
+        if not loaded:
+            logger.warning("No models found in checkpoint directory")
+        return loaded
+
 def evaluate_forecast(X_test=None, y_test=None):
     """Evaluate forecast model performance.
 
@@ -116,16 +135,8 @@ def evaluate_forecast(X_test=None, y_test=None):
 
     if X_test is not None and y_test is not None:
         engine = ForecastingEngine()
-        # Load models from checkpoint if available
-        model_dir = Path("forecasting/models_checkpoint")
-        if model_dir.exists():
-            for model_file in model_dir.glob("*_model.pkl"):
-                model_name = model_file.stem.replace("_model", "")
-                with open(model_file, "rb") as f:
-                    engine.models[model_name] = pickle.load(f)
-
-        if not engine.models:
-            raise RuntimeError("No trained models loaded. Run forecasting.train_models() first.")
+        if not engine.load_models():
+            raise RuntimeError("No trained models loaded. Run forecasting/models.py first.")
 
         return engine.evaluate_models(X_test, y_test)
 

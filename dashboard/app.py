@@ -48,21 +48,14 @@ with tab1:
             st.metric("Avg Wind Speed (m/s)", f"{df['wind_speed'].mean():.2f}")
         with col3:
             st.metric("Avg Power (kW)", f"{df['power'].mean():.1f}")
-        
-        st.subheader("Time Series Plot")
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            y=df['power'].head(1000), mode='lines', name='Actual Power',
-            line=dict(color='steelblue')
-        ))
-        fig.update_layout(title="Power Output Over Time", xaxis_title="Time (hours)", yaxis_title="Power (kW)")
-        st.plotly_chart(fig, use_container_width=True)
-        
-        st.subheader("Data Summary")
-        st.dataframe(df.head(20), use_container_width=True)
-    else:
-        st.warning("⚠️ Preprocessed data not found. Run preprocessing first.")
 
+            # Generator speed and power non-zero counts (to diagnose zero values)
+            if 'generator_speed' in df.columns:
+                nonzero_gen = (df['generator_speed'] != 0).sum()
+                st.write(f"Generator speed non-zero rows: {nonzero_gen} / {len(df)}")
+            if 'power' in df.columns:
+                nonzero_power = (df['power'] != 0).sum()
+                st.write(f"Actual power non-zero rows: {nonzero_power} / {len(df)}")
 # ========== TAB 2: Digital Twin ==========
 with tab2:
     st.header("Digital Twin Validation")
@@ -102,15 +95,33 @@ with tab3:
     forecast_file = Path("experiments/forecast_results.csv")
     if forecast_file.exists():
         forecast_df = pd.read_csv(forecast_file)
-        
-        st.subheader("Model Comparison")
-        st.dataframe(forecast_df, use_container_width=True)
-        
-        fig = px.bar(forecast_df, x='model', y=['mae', 'rmse'], barmode='group',
-                     title="Forecasting Model Comparison")
-        st.plotly_chart(fig, use_container_width=True)
+        if forecast_df.empty:
+            st.warning("Forecast results file exists but contains no rows. Run `python forecasting/models.py` again.")
+        else:
+            st.subheader("Model Comparison")
+            st.dataframe(forecast_df, use_container_width=True)
+            
+            fig = px.bar(forecast_df, x='model', y=['mae', 'rmse'], barmode='group',
+                         title="Forecasting Model Comparison")
+            st.plotly_chart(fig, use_container_width=True)
     else:
-        st.info("ℹ️ Run forecasting: `python forecasting/train_models.py`")
+        st.info("ℹ️ Run forecasting: `python forecasting/models.py`")
+
+    # Fallback: evaluate hash and models if file is missing
+    if not forecast_file.exists():
+        try:
+            from forecasting.models import ForecastingEngine
+            df = pd.read_csv("data/processed/scada_preprocessed.csv")
+            engine = ForecastingEngine()
+            X_train, X_test, y_train, y_test = engine.prepare_features(df)
+            if X_test is not None:
+                train_results = engine.evaluate_models(X_test, y_test)
+                st.write("### Forecast evaluation from runtime data")
+                st.dataframe(train_results)
+            else:
+                st.warning("Insufficient data for runtime model evaluation.")
+        except Exception as e:
+            st.warning(f"Could not evaluate forecasting model runtime: {e}")
 
 # ========== TAB 4: Blockchain Anchors ==========
 with tab4:
@@ -136,26 +147,38 @@ with tab5:
     st.header("Data Integrity Verification")
     
     if st.button("🔐 Run Tamper Detection"):
-        st.info("Simulating integrity check...")
+        st.info("Running deterministic integrity check...")
         
         hashes_file = Path("experiments/hourly_hashes.csv")
-        if hashes_file.exists():
+        data_file = Path("data/processed/scada_preprocessed.csv")
+        if not hashes_file.exists():
+            st.warning("⚠️ No batch hash file available. Generate hashes first using `python hashing/batch_hasher.py`.")
+        elif not data_file.exists():
+            st.warning("⚠️ Preprocessed SCADA data not found. Run preprocessing first.")
+        else:
+            from hashing.batch_hasher import BatchHasher
+            hasher = BatchHasher()
+
+            df = pd.read_csv(data_file)
+            time_col = 'datetime' if 'datetime' in df.columns else 'time'
+            hourly_batches = hasher.batch_by_hour(df, time_col=time_col)
+
             hashes_df = pd.read_csv(hashes_file)
-            
-            # Simulate verification
             all_valid = True
-            for idx, row in hashes_df.tail(5).iterrows():
-                status = "✓ VALID" if np.random.random() > 0.05 else "✗ TAMPERED"
-                if "TAMPERED" in status:
+            for idx, row in hashes_df.iterrows():
+                hour = row['hour']
+                stored_hash = row['batch_hash']
+                batch_data = hourly_batches.get(hour, [])
+                passed = hasher.verify_hash(hour, batch_data, stored_hash)
+                status = "✓ VALID" if passed else "✗ TAMPERED"
+                if not passed:
                     all_valid = False
-                st.write(f"{row['hour']}: Hash `{row['batch_hash'][:20]}...` {status}")
-            
+                st.write(f"{hour}: Hash `{stored_hash[:20]}...` {status}")
+
             if all_valid:
                 st.success("✓ All hashes verified! Data integrity confirmed.")
             else:
                 st.error("✗ Tampering detected! Hash mismatch found.")
-        else:
-            st.warning("⚠️ No hashes available for verification")
 
 # ========== TAB 6: Energy Marketplace ==========
 with tab6:
@@ -372,19 +395,52 @@ with tab7:
 st.markdown("---")
 st.markdown("**WPP Digital Twin** | Research-Grade Prototype | Hybrid On-Chain + Off-Chain Architecture")
 
-@app.route("/forecast")
-def forecast():
+st.subheader("Forecast model evaluation")
+
+try:
     from forecasting.models import ForecastingEngine
-    import pandas as pd
+    from pathlib import Path
 
-    # Load processed data
     df = pd.read_csv("data/processed/scada_preprocessed.csv")
+    st.write(f"Data loaded: {len(df):,} rows")
 
-    # Prepare features and make predictions
     engine = ForecastingEngine()
     X_train, X_test, y_train, y_test = engine.prepare_features(df)
-    if X_test is not None:
-        predictions = engine.predict(X_test)
-        return f"Predicted Power Outputs: {predictions.tolist()}"
+
+    if X_test is None or len(X_test) == 0:
+        st.warning("Insufficient data for forecasting evaluation. Make sure `scada_preprocessed.csv` contains wind/power features.")
     else:
-        return "Insufficient data for predictions"
+        st.write(f"Train/Test split: {len(X_train)} / {len(X_test)}")
+
+        forecast_file = Path("experiments/forecast_results.csv")
+
+        if forecast_file.exists():
+            st.success("Using existing forecast metrics from experiments/forecast_results.csv")
+            results = pd.read_csv(forecast_file)
+        else:
+            loaded = engine.load_models(checkpoint_dir="forecasting/models_checkpoint")
+            if loaded:
+                st.success("Loaded forecasting models from checkpoint")
+            else:
+                st.warning("No trained models found in checkpoint. Training models now (this may take a few seconds)...")
+                engine.train_linear_regression(X_train, y_train)
+                engine.train_random_forest(X_train, y_train)
+                engine.save_models("forecasting/models_checkpoint")
+                st.success("Model training complete and checkpoints saved")
+
+            results = engine.evaluate_models(X_test, y_test)
+            if not results.empty:
+                forecast_file.parent.mkdir(parents=True, exist_ok=True)
+                results.to_csv(forecast_file, index=False)
+
+        if results is not None and not results.empty:
+            st.subheader("Forecasting model performance")
+            st.dataframe(results)
+            st.markdown("\n**Tip:** If you want live API forecasting, implement a dedicated FastAPI/Flask service using this module")
+            st.info("✅ Forecast evaluation is now available and persisted to experiments/forecast_results.csv.")
+        else:
+            st.warning("Forecast evaluation produced no results. Check your model training path and feature data.")
+
+except Exception as e:
+    st.error(f"Forecast module failed to run in dashboard: {e}")
+    st.info("Run `python forecasting/models.py` to retrain and create `experiments/forecast_results.csv`.")

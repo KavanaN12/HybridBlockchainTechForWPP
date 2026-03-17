@@ -181,20 +181,17 @@ class SCADADataCleaner:
             df['theoretical_power'] = 0.5 * air_density * rotor_area * (df['wind_speed']**3) * cp_coefficient
             df['theoretical_power'] = df['theoretical_power'].clip(0, self.max_power)
             
-            # Rolling average
-            df['rolling_avg_wind'] = df['wind_speed'].rolling(window=10, min_periods=1).mean()
-            
-            # Lag features
-            df['lag_power'] = df['power'].shift(1).bfill()
-            
-            # Efficiency gap
-            df['efficiency_gap'] = df['power'] - df['theoretical_power']
-            
-            # Add rolling average of wind speed
-            df['rolling_avg_wind'] = df['WindSpeed'].rolling(window=3).mean()
+            # Rolling average (use standardized columns if present)
+            source_wind = 'wind_speed' if 'wind_speed' in df.columns else 'WindSpeed' if 'WindSpeed' in df.columns else None
+            if source_wind is not None:
+                df['rolling_avg_wind'] = df[source_wind].rolling(window=10, min_periods=1).mean()
 
-            # Add lagged power output
-            df['lag_power'] = df['PowerOutput'].shift(1)
+            source_power = 'power' if 'power' in df.columns else 'PowerOutput' if 'PowerOutput' in df.columns else None
+            if source_power is not None:
+                df['lag_power'] = df[source_power].shift(1).bfill()
+
+            # Efficiency gap
+            df['efficiency_gap'] = df[source_power] - df['theoretical_power'] if source_power is not None else np.nan
 
             # Drop rows with NaN values after feature engineering
             df = df.dropna()
