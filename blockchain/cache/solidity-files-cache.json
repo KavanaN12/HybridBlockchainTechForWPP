@@ -38,8 +38,8 @@
       ]
     },
     "D:\\WPPDigitalTwin\\blockchain\\contracts\\AuctionEngine.sol": {
-      "lastModificationDate": 1773090727872,
-      "contentHash": "abb552aa14fa6ee6b18e8eeea67f668c",
+      "lastModificationDate": 1773659668709,
+      "contentHash": "9714b6a75bc7488bc9103c32effd2e6f",
       "sourceName": "contracts/AuctionEngine.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -77,8 +77,8 @@
       ]
     },
     "D:\\WPPDigitalTwin\\blockchain\\contracts\\EnergyToken.sol": {
-      "lastModificationDate": 1773090719748,
-      "contentHash": "c548af3cead76f41f4ef43059d7f1358",
+      "lastModificationDate": 1773659489136,
+      "contentHash": "5d9d4d73e406773d821809c087900e86",
       "sourceName": "contracts/EnergyToken.sol",
       "solcConfig": {
         "version": "0.8.20",

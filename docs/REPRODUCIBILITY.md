@@ -45,30 +45,36 @@ pip install -r requirements.txt
 
 ```bash
 # 2.1 Download dataset manually
-# Visit: https://www.kaggle.com/datasets/[dataset-name]
-# Download CSV file
+# Visit: https://www.kaggle.com/datasets/pythonafroz/wind-turbine-scada-data
+# Download CSV file and place it in the following directory:
+# d:/WPPDigitalTwin/data/raw/kaggle_scada.csv
 
-# 2.2 Place in project
-# Move downloaded CSV to: data/raw/kaggle_scada.csv
-# Verify: dir data/raw/  (should show kaggle_scada.csv)
-
-# 2.3 Verify data integrity
-cd preprocessing
-python -c "import pandas as pd; df = pd.read_csv('../data/raw/kaggle_scada.csv'); print(f'Records: {len(df)}, Columns: {list(df.columns)}')"
+# 2.2 Verify dataset integrity
+python verify_project_quality.py --check-data
 ```
 
-### Step 3: Phase 1 - Data Preprocessing (20 minutes)
+### Step 3: Preprocessing Pipeline (5 minutes)
 
 ```bash
 # 3.1 Run preprocessing pipeline
+python preprocessing/run_pipeline.py
+
+# 3.2 Verify preprocessing outputs
+python verify_project_quality.py --check-preprocessing
+```
+
+### Step 4: Phase 1 - Data Preprocessing (20 minutes)
+
+```bash
+# 4.1 Run preprocessing pipeline
 cd preprocessing
 python run_pipeline.py
 
-# 3.2 Verify output
+# 4.2 Verify output
 # Expected: data/processed/scada_preprocessed.csv (with cleaned data)
 dir ..\data\processed\
 
-# 3.3 Run tests
+# 4.3 Run tests
 cd ..
 pytest tests/test_preprocessing.py -v
 # Expected: All tests pass (4 test cases)
@@ -77,17 +83,17 @@ pytest tests/test_preprocessing.py -v
 **Output Files:**
 - `data/processed/scada_preprocessed.csv` (10K+ cleaned records)
 
-### Step 4: Phase 2 - Digital Twin Validation (15 minutes)
+### Step 5: Phase 2 - Digital Twin Validation (15 minutes)
 
 ```bash
-# 4.1 Run twin validation
+# 5.1 Run twin validation
 cd twin
 python validate_twin.py
 
-# 4.2 Verify results
+# 5.2 Verify results
 dir ..\experiments\twin_validation_results.csv
 
-# 4.3 Run twin tests
+# 5.3 Run twin tests
 cd ..
 pytest tests/test_twin.py -v
 # Expected: 5 tests pass
@@ -98,18 +104,18 @@ pytest tests/test_twin.py -v
 - RMSE: < 800 kW (< 10% of rated)
 - R²: > 0.85 (high fidelity)
 
-### Step 5: Phase 3 - Forecasting Models (15 minutes)
+### Step 6: Phase 3 - Forecasting Models (15 minutes)
 
 ```bash
-# 5.1 Train forecasting models
+# 6.1 Train forecasting models
 cd forecasting
 python train_models.py
 
-# 5.2 Verify models trained
+# 6.2 Verify models trained
 dir models_checkpoint\  # Should show: linear_model.pkl, random_forest_model.pkl
 dir ..\experiments\forecast_results.csv
 
-# 5.3 Check results
+# 6.3 Check results
 type ..\experiments\forecast_results.csv
 # Expected: MAE, RMSE, MAPE for each model
 ```
@@ -118,30 +124,30 @@ type ..\experiments\forecast_results.csv
 - 2 models trained (Linear Regression + Random Forest)
 - CSV with metrics for each model
 
-### Step 6: Phase 4 - Off-Chain Storage Setup (10 minutes)
+### Step 7: Phase 4 - Off-Chain Storage Setup (10 minutes)
 
 ```bash
-# 6.1 Start MongoDB (requires Docker)
+# 7.1 Start MongoDB (requires Docker)
 cd docker
 docker-compose up -d mongodb
 
-# 6.2 Verify MongoDB running
+# 7.2 Verify MongoDB running
 # Check: http://localhost:8081 (Mongo Express should load)
 
-# 6.3 Initialize collections
+# 7.3 Initialize collections
 cd ..
 python hashing/batch_hasher.py
 # This creates 4 MongoDB collections (simulated locally for research)
 ```
 
-### Step 7: Phase 5 - Hash Generation (10 minutes)
+### Step 8: Phase 5 - Hash Generation (10 minutes)
 
 ```bash
-# 7.1 Generate hourly hashes
+# 8.1 Generate hourly hashes
 cd hashing
 python batch_hasher.py
 
-# 7.2 Verify hashes
+# 8.2 Verify hashes
 type ..\experiments\hourly_hashes.csv
 # Expected: ~168 hourly batches (7 days of data)
 ```
@@ -149,64 +155,64 @@ type ..\experiments\hourly_hashes.csv
 **Output:**
 - `experiments/hourly_hashes.csv` (hour, batch_hash, record_count)
 
-### Step 8: Phase 6 - Blockchain Setup (20 minutes)
+### Step 9: Phase 6 - Blockchain Setup (20 minutes)
 
 ```bash
-# 8.1 Install blockchain dependencies
+# 9.1 Install blockchain dependencies
 cd blockchain
 npm install
 
-# 8.2 Compile contracts
+# 9.2 Compile contracts
 npx hardhat compile
 # Expected: Successfully compiled DataAnchor.sol
 
-# 8.3 Run contract tests
+# 9.3 Run contract tests
 npx hardhat test
 # Expected: All contract tests pass
 
-# 8.4 Create local blockchain (in separate terminal)
+# 9.4 Create local blockchain (in separate terminal)
 npx hardhat node
 # Keep this running; note the account addresses
 ```
 
-### Step 9: Phase 7 - Synchronization (10 minutes)
+### Step 10: Phase 7 - Synchronization (10 minutes)
 
 ```bash
-# 9.1 Run sync engine (main terminal, after blockchain running)
+# 10.1 Run sync engine (main terminal, after blockchain running)
 cd sync
 python blockchain_sync.py
 
-# 9.2 Verify sync logs
+# 10.2 Verify sync logs
 type sync_logs.json
 # Expected: JSON with tx IDs for each batch
 ```
 
-### Step 10: Phase 8 - Dashboard (5 minutes)
+### Step 11: Phase 8 - Dashboard (5 minutes)
 
 ```bash
-# 10.1 Launch Streamlit
+# 11.1 Launch Streamlit
 cd dashboard
 streamlit run app.py
 
-# 10.2 Access dashboard
+# 11.2 Access dashboard
 # Automatically opens: http://localhost:8501
 # Check all 5 tabs load successfully
 
-# 10.3 Test "Run Tamper Detection" button
+# 11.3 Test "Run Tamper Detection" button
 # Expected: ✓ Hash verification results
 ```
 
-### Step 11: Phase 9&10 - Run All Experiments (30 minutes)
+### Step 12: Phase 9&10 - Run All Experiments (30 minutes)
 
 ```bash
-# 11.1 Execute full experiment suite
+# 12.1 Execute full experiment suite
 cd experiments
 python run_all_experiments.py
 
-# 11.2 Verify results
+# 12.2 Verify results
 type ..\paper_results\experiment_results.json
 
-# 11.3 Check results files:
+# 12.3 Check results files:
 dir ..\paper_results\
 # Expected files:
 # - experiment_results.json
@@ -219,28 +225,28 @@ dir ..\paper_results\
 - **Exp C**: Best forecasting model (RMSE comparison)
 - **Exp D**: Hash interval trade-offs
 
-### Step 12: CI/CD Verification (5 minutes)
+### Step 13: CI/CD Verification (5 minutes)
 
 ```bash
-# 12.1 Run all tests (simulates GitHub Actions)
+# 13.1 Run all tests (simulates GitHub Actions)
 pytest tests/ -v --cov=preprocessing --cov=twin --cov=forecasting
 
-# 12.2 Expected output
+# 13.2 Expected output
 # ✓ test_preprocessing.py: 4 passed
 # ✓ test_twin.py: 5 passed
 # ✓ code coverage > 80%
 ```
 
-### Step 13: Generate Complete Report (10 minutes)
+### Step 14: Generate Complete Report (10 minutes)
 
 ```bash
-# 13.1 Verify all deliverables exist
+# 14.1 Verify all deliverables exist
 ls -R data/processed/              # Cleaned data
 ls experiments/                    # All result CSVs & JSON
 ls paper_results/                  # Publication files
 ls sync/sync_logs.json             # Blockchain logs
 
-# 13.2 Create summary
+# 14.2 Create summary
 # All expected files present = Success ✓
 ```
 

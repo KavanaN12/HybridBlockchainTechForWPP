@@ -29,15 +29,26 @@ from web3 import Web3
 from dotenv import load_dotenv
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)-8s | %(message)s',
-    handlers=[
-        logging.FileHandler('logs/trading_orchestrator.log'),
-        logging.StreamHandler()
-    ]
-)
+class SafeStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        try:
+            super().emit(record)
+        except UnicodeEncodeError:
+            msg = self.format(record)
+            msg = msg.encode('ascii', 'replace').decode('ascii')
+            self.stream.write(msg + self.terminator)
+            self.flush()
+
+formatter = logging.Formatter('%(asctime)s | %(levelname)-8s | %(message)s')
+file_handler = logging.FileHandler('logs/trading_orchestrator.log', encoding='utf-8')
+file_handler.setFormatter(formatter)
+stream_handler = SafeStreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter)
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 # Load environment
 load_dotenv()

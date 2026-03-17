@@ -37,6 +37,9 @@ contract EnergyToken is ERC20, Ownable {
     event MinterAdded(address indexed minter);
     event MinterRemoved(address indexed minter);
     
+    // Debug event for token balance and burn amount
+    event DebugTokenBalance(uint256 contractBalance, uint256 tokensToBurn);
+    
     // State variables
     mapping(address => bool) public minters;  // Authorized minters (orchestrator, auction engine)
     mapping(uint256 => uint256) public hourlyMint;  // Track mints per hour
@@ -90,8 +93,11 @@ contract EnergyToken is ERC20, Ownable {
         
         // Mint tokens (1 token = 1 Wh)
         _mint(_to, _energyWh);
-        
+
+        // Debug: Log token balance after minting
+        uint256 contractBalance = balanceOf(_to);
         emit TokensMinted(_hour, _energyWh, _energyWh, block.timestamp);
+        emit DebugTokenBalance(contractBalance, 0); // Debug log for minting
     }
     
     /**
@@ -110,8 +116,16 @@ contract EnergyToken is ERC20, Ownable {
         require(balanceOf(msg.sender) >= _amount, "Insufficient tokens to burn");
         require(_amount > 0, "Burn amount must be > 0");
         
+        // Debug: Log token balance and burn amount
+        emit DebugTokenBalance(balanceOf(msg.sender), _amount);
+        
+        // Burn tokens
         _burn(msg.sender, _amount);
         emit TokensBurned(_auctionId, _amount, _buyer, block.timestamp);
+        
+        // Debug: Log token balance after burning
+        uint256 postBurnBalance = balanceOf(msg.sender);
+        emit DebugTokenBalance(postBurnBalance, 0);
     }
     
     /**

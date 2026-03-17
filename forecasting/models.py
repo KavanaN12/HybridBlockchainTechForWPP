@@ -104,6 +104,34 @@ class ForecastingEngine:
                 pickle.dump(model, f)
             logger.info(f"Saved {name} to {path}")
 
+def evaluate_forecast(X_test=None, y_test=None):
+    """Evaluate forecast model performance.
+
+    If model results exist from prior training (`experiments/forecast_results.csv`), return them.
+    Otherwise, if X_test and y_test are provided and models are checkpointed, evaluate them.
+    """
+    result_file = Path("experiments/forecast_results.csv")
+    if result_file.exists():
+        return pd.read_csv(result_file)
+
+    if X_test is not None and y_test is not None:
+        engine = ForecastingEngine()
+        # Load models from checkpoint if available
+        model_dir = Path("forecasting/models_checkpoint")
+        if model_dir.exists():
+            for model_file in model_dir.glob("*_model.pkl"):
+                model_name = model_file.stem.replace("_model", "")
+                with open(model_file, "rb") as f:
+                    engine.models[model_name] = pickle.load(f)
+
+        if not engine.models:
+            raise RuntimeError("No trained models loaded. Run forecasting.train_models() first.")
+
+        return engine.evaluate_models(X_test, y_test)
+
+    raise ValueError("No forecast evaluation data found. Provide test data or run training first.")
+
+
 def train_models():
     """Execute full forecasting pipeline."""
     print("=" * 60)

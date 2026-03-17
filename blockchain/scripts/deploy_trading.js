@@ -18,6 +18,23 @@
 const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
+const { ethers } = require("hardhat");
+const { network } = require("hardhat");
+
+// Define bid period duration at the top level
+const bidPeriodDuration = 3600; // 1 hour in seconds
+
+// Define reveal duration at the top level
+const revealDuration = 10 * 60; // 10 minutes in seconds
+
+// Define adjustedRevealBuffer for timing adjustments
+const adjustedRevealBuffer = 5; // 5 seconds buffer to keep reveal period open
+
+// Use contract constants for time durations
+    const CONTRACT_BID_DURATION = 30 * 60; // 30 minutes in seconds
+    const CONTRACT_REVEAL_DURATION = 10 * 60; // 10 minutes in seconds
+
+const postRevealBuffer = 120; // 2 minutes buffer after reveal period ends
 
 async function main() {
     console.log("\n" + "=".repeat(70));
@@ -81,6 +98,14 @@ async function main() {
     console.log(`  ✓ Minted ${energyWh} ENERGY tokens for hour ${hourTimestamp}`);
     console.log(`  ✓ AuctionEngine balance: ${balance1} tokens\n`);
 
+    // Verify token balance after minting
+    const mintedBalance = await energyToken.balanceOf(auctionEngineAddress);
+    console.log(`  Debug: AuctionEngine token balance after minting: ${mintedBalance} tokens`);
+
+    // Debug: Log token balance after each operation
+    const postOperationBalance = await energyToken.balanceOf(auctionEngineAddress);
+    console.log(`  Debug: AuctionEngine token balance after operation: ${postOperationBalance} tokens`);
+
     // Test 2: Start auction
     console.log("Test 2: Starting hourly auction");
     const startAuctionTx = await auctionEngine.startAuction(hourTimestamp, energyWh);
@@ -91,6 +116,16 @@ async function main() {
     console.log(`  ✓ Auction started: ID=${auctionId}`);
     console.log(`  ✓ Energy available: ${auctionDetails.energyAvailable} tokens`);
     console.log(`  ✓ Bid deadline: ${new Date(Number(auctionDetails.bidDeadline) * 1000).toISOString()}\n`);
+
+    // Convert BigInt to Number for logging
+    const revealDeadline = Number(auctionDetails.revealDeadline);
+    console.log(`  ✓ Reveal deadline: ${new Date(revealDeadline * 1000).toISOString()}`);
+
+    // Debug: Log current blockchain time and reveal deadline
+    const currentBlock = await ethers.provider.getBlock("latest");
+    const currentTime = currentBlock.timestamp;
+    console.log(`  Debug: Current blockchain time: ${new Date(currentTime * 1000).toISOString()}`);
+    console.log(`  Debug: Reveal deadline: ${new Date(revealDeadline * 1000).toISOString()}`);
 
     // Test 3: Place sealed bids (mock)
     console.log("Test 3: Placing sealed bids");
@@ -112,14 +147,35 @@ async function main() {
     }
     console.log(`  ✓ Total bids received: ${buyers.length}\n`);
 
-    // Wait for bid period to close (simulate time passage)
-    console.log("Test 4: Simulating bid period closure...");
-    await ethers.provider.send("hardhat_mine", ["0x708"]);  // Mine 1800 blocks (~30 min)
-    console.log(`  ✓ Advanced blockchain time\n`);
+    // Advance time by bid duration
+    await network.provider.send("evm_increaseTime", [CONTRACT_BID_DURATION]);
+    await network.provider.send("evm_mine");
+    console.log(`  ✓ Advanced blockchain time by bid duration\n`);
 
-    // Test 5: Reveal bids
-    console.log("Test 5: Revealing bids");
+    // Advance time by reveal duration
+    await network.provider.send("evm_increaseTime", [CONTRACT_REVEAL_DURATION - adjustedRevealBuffer]);
+    await network.provider.send("evm_mine");
+    console.log(`  ✓ Adjusted blockchain time to keep reveal period open\n`);
+
+    // Adjust blockchain time to ensure it is well within the reveal period
+    await network.provider.send("evm_increaseTime", [adjustedRevealBuffer]);
+    await network.provider.send("evm_mine");
+    console.log(`  ✓ Adjusted blockchain time to ensure reveal period remains open\n`);
+
+    // Validate blockchain time before revealing bids
+    const validateBlockTime = await ethers.provider.getBlock("latest");
+    const validateTime = validateBlockTime.timestamp;
+    console.log(`  Debug: Blockchain time before revealing bids: ${new Date(validateTime * 1000).toISOString()}`);
+
+    // Ensure reveal period is open before each revealBid call
     for (let i = 0; i < buyers.length; i++) {
+        const currentBlock = await ethers.provider.getBlock("latest");
+        const currentTime = currentBlock.timestamp;
+        if (currentTime > revealDeadline) {
+            throw new Error(`Reveal period closed before Buyer ${i + 1} could reveal their bid.`);
+        }
+        console.log(`  Debug: Blockchain time before revealBid for Buyer ${i + 1}: ${new Date(currentTime * 1000).toISOString()}`);
+
         const revealBidTx = await auctionEngine.connect(buyers[i]).revealBid(
             auctionId,
             bidPrices[i],
@@ -132,24 +188,62 @@ async function main() {
 
     // Wait for reveal period to close
     console.log("Test 6: Simulating reveal period closure...");
-    await ethers.provider.send("hardhat_mine", ["0x2ee"]);  // Mine another 750 blocks (~10 min)
+    await network.provider.send("evm_mine");
     console.log(`  ✓ Advanced blockchain time\n`);
 
-    // Test 7: Settle auction
+    // Advance blockchain time to ensure reveal period is fully closed
+    const timeToCloseReveal = revealDeadline - (await ethers.provider.getBlock("latest")).timestamp + postRevealBuffer;
+    if (timeToCloseReveal > 0) {
+        await network.provider.send("evm_increaseTime", [timeToCloseReveal]);
+        await network.provider.send("evm_mine");
+        console.log(`  ✓ Advanced blockchain time to ensure reveal period closure`);
+    }
+
+    // Log blockchain time before settlement
+    const preSettlementBlock = await ethers.provider.getBlock("latest");
+    const preSettlementTime = preSettlementBlock.timestamp;
+    console.log(`  Debug: Blockchain time before settlement: ${new Date(preSettlementTime * 1000).toISOString()}`);
+
+    // Fund AuctionEngine with ETH for settlement payout
+    const auctionDetailsForSettle = await auctionEngine.getAuctionDetails(auctionId);
+    const settlementValue = BigInt(auctionDetailsForSettle.energyAvailable) * BigInt(auctionDetailsForSettle.highestBid);
+    console.log(`  Debug: Funding AuctionEngine with ${settlementValue} wei for settlement`);
+    const fundingTx = await deployer.sendTransaction({
+        to: auctionEngineAddress,
+        value: settlementValue
+    });
+    await fundingTx.wait();
+
+    // Ensure sufficient energy token balance exists before settlement
+    const preSettlementBalanceCheck = await energyToken.balanceOf(auctionEngineAddress);
+    if (preSettlementBalanceCheck < auctionDetailsForSettle.energyAvailable) {
+        throw new Error(`Insufficient tokens in AuctionEngine for settlement. Available: ${preSettlementBalanceCheck}, Required: ${auctionDetailsForSettle.energyAvailable}`);
+    }
+
+    // Attempt to settle the auction
     console.log("Test 7: Settling auction");
-    const turbineInitialBalance = await ethers.provider.getBalance(deployer.address);
-    
     const settleTx = await auctionEngine.settleAuction(auctionId);
     const settleReceipt = await settleTx.wait();
-    
+
     const auctionAfter = await auctionEngine.getAuctionDetails(auctionId);
     const winnerBalance = await energyToken.balanceOf(auctionAfter.winner);
-    
+
     console.log(`  ✓ Auction settled`);
     console.log(`  ✓ Winner: ${auctionAfter.winner.slice(0, 6)}...`);
     console.log(`  ✓ Winning price: ${ethers.formatUnits(auctionAfter.highestBid, 0)} wei/token`);
     console.log(`  ✓ Winner received: ${winnerBalance} tokens`);
     console.log(`  ✓ Settlement gas: ${settleReceipt.gasUsed} units\n`);
+
+    // Debug: Log token balances before settlement
+    const preSettlementBalance = await energyToken.balanceOf(auctionEngineAddress);
+    console.log(`  Debug: AuctionEngine token balance before settlement: ${preSettlementBalance} tokens`);
+
+    // Debug: Log token balance after settlement
+    const postSettlementBalance = await energyToken.balanceOf(auctionEngineAddress);
+    console.log(`  Debug: AuctionEngine token balance after settlement: ${postSettlementBalance} tokens`);
+
+    const auctionDetailsBeforeSettlement = await auctionEngine.getAuctionDetails(auctionId);
+    console.log(`  Debug: Auction details before settlement:`, auctionDetailsBeforeSettlement);
 
     // ============== SAVE DEPLOYMENT INFO ==============
     const deploymentInfo = {

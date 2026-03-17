@@ -2,6 +2,7 @@
 from pathlib import Path
 from data_cleaner import SCADADataCleaner, download_kaggle_dataset
 import sys
+from forecasting.models import ForecastingEngine
 
 def main():
     """Execute preprocessing pipeline."""
@@ -44,6 +45,16 @@ def main():
     except Exception as e:
         print(f"\n❌ ERROR during pipeline: {e}")
         sys.exit(1)
+
+    # Train forecasting models
+    engine = ForecastingEngine()
+    X_train, X_test, y_train, y_test = engine.prepare_features(df)
+    if X_train is not None and y_train is not None:
+        engine.train_linear_regression(X_train, y_train)
+        engine.train_random_forest(X_train, y_train)
+        print("\n\u2713 Forecasting models trained successfully")
+    else:
+        print("\n\u274c Failed to train models: Insufficient data")
 
 if __name__ == "__main__":
     main()

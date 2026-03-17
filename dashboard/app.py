@@ -8,6 +8,14 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
+import sys
+
+# Ensure root workspace is on Python path so local package imports resolve
+root_path = Path(__file__).resolve().parents[1]
+if str(root_path) not in sys.path:
+    sys.path.insert(0, str(root_path))
+
+from forecasting.models import ForecastingEngine
 
 st.set_page_config(page_title="WPP Digital Twin Dashboard", layout="wide")
 
@@ -154,17 +162,17 @@ with tab6:
     st.header("💰 Energy Marketplace - Peer-to-Peer Trading")
     
     trading_log_file = Path("logs/trading_log.json")
-    
+
     if trading_log_file.exists():
         import json
-        
+
         try:
             with open(trading_log_file, 'r') as f:
                 logs = [json.loads(line) for line in f if line.strip()]
-            
+
             if logs:
                 latest_log = logs[-1]
-                
+
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
                     st.metric("Current Auction ID", int(latest_log.get('auction_id', 0)))
@@ -177,24 +185,24 @@ with tab6:
                 with col4:
                     status = "🟢 Active" if latest_log.get('auction_started') else "⏹️ Waiting"
                     st.metric("Status", status)
-                
+
                 st.subheader("Current Auction Details")
-                
+
                 col1, col2 = st.columns(2)
                 with col1:
                     st.write("**Hour**:", latest_log.get('timestamp', 'N/A'))
                     st.write("**Auction ID**:", latest_log.get('auction_id', 'N/A'))
                     st.write("**Energy (Wh)**:", f"{latest_log.get('tokens_minted', 0):,.0f}")
-                
+
                 with col2:
                     bidding_window = "Open (Bid Phase: 00:00-00:30 UTC)"
                     st.write("**Bidding Window**:", bidding_window)
                     st.write("**Current Bids**:", "47 bids placed")
                     st.write("**Highest Price**:", "$0.0000450/Wh")
-                
+
                 # Display trading history
                 st.subheader("Recent Auctions (Past 24 Hours)")
-                
+
                 trading_history = []
                 for log in logs[-24:]:  # Last 24 hours of logs
                     trading_history.append({
@@ -238,28 +246,28 @@ with tab7:
     
     settlement_file = Path("paper_results/exp_e_trading_efficiency.json")
     trading_log_file = Path("logs/trading_log.json")
-    
+
     if trading_log_file.exists():
         import json
-        
+
         try:
             with open(trading_log_file, 'r') as f:
                 logs = [json.loads(line) for line in f if line.strip()]
-            
+
             if logs:
                 st.subheader("Recent Settlements (Past 24 Hours)")
-                
+
                 settlements = []
                 for i, log in enumerate(logs[-24:], 1):
                     hour_num = i
                     timestamp = log.get('timestamp', 'N/A')
                     energy = log.get('tokens_minted', 0)
-                    
+
                     # Simulate settlement details (in production, fetch from blockchain)
                     winner_addr = f"0x{np.random.bytes(4).hex()}"[:12]
                     price = 0.000042 + (np.random.random() * 0.000010)
                     value = (energy * price) / 1000  # Approximate value in USD
-                    
+
                     settlements.append({
                         'Hour': f"{hour_num:02d}:00 UTC",
                         'Timestamp': timestamp,
@@ -269,39 +277,39 @@ with tab7:
                         'Value ($)': f"${value:.2f}",
                         'Status': '✓ Settled'
                     })
-                
+
                 settlement_df = pd.DataFrame(settlements)
                 st.dataframe(settlement_df, use_container_width=True)
-                
+
                 st.subheader("Settlement Analytics")
-                
+
                 col1, col2, col3, col4 = st.columns(4)
-                
+
                 with col1:
                     total_settled = len(settlements)
                     st.metric("Auctions Settled", total_settled)
-                
+
                 with col2:
                     avg_price = 0.000045
                     st.metric("Avg Price ($/Wh)", f"${avg_price:.8f}")
-                
+
                 with col3:
                     total_revenue = sum([float(s['Value ($)'].replace('$', '')) for s in settlements])
                     st.metric("Total Revenue ($)", f"${total_revenue:.2f}")
-                
+
                 with col4:
                     settlement_success_rate = 98.5
                     st.metric("Settlement Success Rate", f"{settlement_success_rate:.1f}%")
-                
+
                 # Price discovery chart
                 st.subheader("Price Discovery Over Time")
-                
+
                 prices = []
                 times = []
                 for i, settlement in enumerate(settlements):
                     prices.append(float(settlement['Price ($/Wh)'].replace('$', '')))
                     times.append(f"Hour {i+1}")
-                
+
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
                     x=times, y=prices, mode='lines+markers',
@@ -316,25 +324,25 @@ with tab7:
                     hovermode='x unified'
                 )
                 st.plotly_chart(fig, use_container_width=True)
-                
+
                 # Efficiency metrics
                 st.subheader("Trading Efficiency Metrics")
-                
+
                 col1, col2 = st.columns(2)
-                
+
                 with col1:
                     st.metric("Gas Cost per Auction", "~$0.05")
                     st.metric("Daily Gas Cost", "$1.20")
                     st.metric("Cost per Wh", "<$0.000001")
-                
+
                 with col2:
                     st.metric("Bid Scalability", "100+ bidders")
                     st.metric("Settlement Latency", "<5 sec")
                     st.metric("Price Efficiency", "100% (sealed-bid)")
-                
+
                 # Hybrid vs On-Chain
                 st.subheader("Hybrid vs Fully On-Chain Comparison")
-                
+
                 comparison_data = {
                     'Architecture': ['Hybrid (Optimized)', 'Fully On-Chain'],
                     'Daily Transactions': [48, 2448],
@@ -363,3 +371,20 @@ with tab7:
 
 st.markdown("---")
 st.markdown("**WPP Digital Twin** | Research-Grade Prototype | Hybrid On-Chain + Off-Chain Architecture")
+
+@app.route("/forecast")
+def forecast():
+    from forecasting.models import ForecastingEngine
+    import pandas as pd
+
+    # Load processed data
+    df = pd.read_csv("data/processed/scada_preprocessed.csv")
+
+    # Prepare features and make predictions
+    engine = ForecastingEngine()
+    X_train, X_test, y_train, y_test = engine.prepare_features(df)
+    if X_test is not None:
+        predictions = engine.predict(X_test)
+        return f"Predicted Power Outputs: {predictions.tolist()}"
+    else:
+        return "Insufficient data for predictions"

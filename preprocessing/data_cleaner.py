@@ -190,6 +190,17 @@ class SCADADataCleaner:
             # Efficiency gap
             df['efficiency_gap'] = df['power'] - df['theoretical_power']
             
+            # Add rolling average of wind speed
+            df['rolling_avg_wind'] = df['WindSpeed'].rolling(window=3).mean()
+
+            # Add lagged power output
+            df['lag_power'] = df['PowerOutput'].shift(1)
+
+            # Drop rows with NaN values after feature engineering
+            df = df.dropna()
+
+            logger.info("Added rolling_avg_wind and lag_power features")
+            
             logger.info(f"Engineered features: theoretical_power, rolling_avg_wind, lag_power, efficiency_gap")
         
         return df

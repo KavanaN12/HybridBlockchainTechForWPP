@@ -58,6 +58,17 @@ contract AuctionEngine is Ownable {
     
     event AuctionCancelled(uint256 indexed auctionId, string reason);
     
+    // Event for debugging token balance and burn amount
+    event DebugTokenBalance(uint256 contractBalance, uint256 tokensToBurn);
+    
+    // Debug event for auction details
+    event DebugAuctionDetails(
+        uint256 indexed auctionId,
+        uint256 energyAvailable,
+        uint256 highestBid,
+        address winner
+    );
+    
     // Auction struct
     struct Auction {
         uint256 auctionId;
@@ -83,7 +94,7 @@ contract AuctionEngine is Ownable {
     
     uint256 public auctionCounter = 0;
     uint256 public constant BID_DURATION = 30 minutes;  // Time window to place bids
-    uint256 public constant REVEAL_DURATION = 10 minutes;  // Time window to reveal
+    uint256 public constant REVEAL_DURATION = 20 minutes;  // Increased reveal duration
     
     // Constants
     uint256 public constant MIN_ENERGY_FOR_AUCTION = 1;  // 1 Wh minimum
@@ -194,15 +205,34 @@ contract AuctionEngine is Ownable {
         
         uint256 totalValue = auction.energyAvailable * auction.highestBid;
         
-        // Transfer tokens from AuctionEngine to winner
+        // Debug: Log token balance and auction state before settlement
+        uint256 preSettlementBalance = energyToken.balanceOf(address(this));
+        emit DebugTokenBalance(preSettlementBalance, auction.energyAvailable);
+        emit DebugAuctionDetails(
+            auction.auctionId,
+            auction.energyAvailable,
+            auction.highestBid,
+            auction.winner
+        );
+
+        // Debug: Log token balance before burning
+        uint256 preBurnBalance = energyToken.balanceOf(address(this));
+        emit DebugTokenBalance(preBurnBalance, auction.energyAvailable);
+
+        // Transfer tokens to winner (delivering purchased energy tokens)
         require(
             energyToken.transfer(auction.winner, auction.energyAvailable),
             "Token transfer failed"
         );
-        
-        // Burn tokens to mark consumed
-        energyToken.burnOnSettlement(_auctionId, auction.energyAvailable, auction.winner);
-        
+
+        // Debug: Log token balance after transfer
+        uint256 postTransferBalance = energyToken.balanceOf(address(this));
+        emit DebugTokenBalance(postTransferBalance, 0);
+
+        // Optionally burn tokens representing consumption in separate workflow
+        // (currently disabled to preserve funds transfer semantics)
+        // energyToken.burnOnSettlement(_auctionId, auction.energyAvailable, auction.winner);
+
         // Transfer ETH to turbine owner
         (bool success, ) = turbineOwner.call{value: totalValue}("");
         require(success, "ETH transfer failed");
