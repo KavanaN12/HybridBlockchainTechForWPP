@@ -76,6 +76,28 @@ class BatchHasher:
         logger.info(f"Hash verification for {hour}: {'✓ PASS' if match else '✗ FAIL'}")
         return match
 
+    def generate_data_hash(self, data: dict) -> str:
+        """Generate a hash for the given data."""
+        try:
+            data_string = json.dumps(data, sort_keys=True)
+            data_hash = hashlib.sha256(data_string.encode()).hexdigest()
+            logger.info(f"Generated hash: {data_hash}")
+            return data_hash
+        except Exception as e:
+            logger.error(f"Error generating data hash: {e}")
+            raise
+
+    def verify_data_integrity(self, data: dict, expected_hash: str) -> bool:
+        """Verify the integrity of the given data against the expected hash."""
+        try:
+            generated_hash = self.generate_data_hash(data)
+            is_valid = generated_hash == expected_hash
+            logger.info(f"Data integrity verification result: {is_valid}")
+            return is_valid
+        except Exception as e:
+            logger.error(f"Error verifying data integrity: {e}")
+            raise
+
 def generate_hashes():
     """Main execution."""
     print("=" * 60)

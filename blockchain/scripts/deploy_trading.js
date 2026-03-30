@@ -327,3 +327,51 @@ main().catch((error) => {
     console.error(error);
     process.exitCode = 1;
 });
+
+// Adding blockchain transaction logic for energy trading
+async function createTransaction(energyAmount, pricePerUnit, producerAddress, consumerAddress) {
+    try {
+        console.log("Creating blockchain transaction...");
+
+        // Example transaction logic
+        const transaction = {
+            from: producerAddress,
+            to: consumerAddress,
+            value: energyAmount * pricePerUnit,
+            data: web3.utils.toHex("Energy trading transaction")
+        };
+
+        // Send transaction
+        const receipt = await web3.eth.sendTransaction(transaction);
+        console.log("Transaction successful:", receipt);
+
+        // Update transaction history
+        updateTransactionHistory(receipt);
+    } catch (error) {
+        console.error("Transaction failed:", error);
+    }
+}
+
+function updateTransactionHistory(receipt) {
+    console.log("Updating transaction history...");
+    // Logic to update transaction history in the UI or database
+    console.log("Transaction receipt:", receipt);
+}
+
+// Adding logic to fetch and display transaction history
+async function fetchTransactionHistory() {
+    try {
+        console.log("Fetching transaction history...");
+
+        // Example API call to fetch transaction history
+        const history = await fetch("http://localhost:8000/transaction_history").then(res => res.json());
+
+        console.log("Transaction History:", history);
+        // Logic to display transaction history in the UI
+        history.forEach(tx => {
+            console.log(`Transaction ID: ${tx.id}, Amount: ${tx.amount}, Status: ${tx.status}`);
+        });
+    } catch (error) {
+        console.error("Failed to fetch transaction history:", error);
+    }
+}

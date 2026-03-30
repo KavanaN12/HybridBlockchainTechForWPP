@@ -50,6 +50,17 @@ class WindTurbineModel:
             return self.cp_max * (1 - 0.5 * (wind_speed - self.rated_speed) / 
                                   (self.cut_out_speed - self.rated_speed))
     
+    def calculate_theoretical_power(self, wind_speed: float, blade_length: float, air_density: float = 1.225):
+        """Calculate theoretical power output of a wind turbine."""
+        try:
+            swept_area = 3.14159 * (blade_length ** 2)
+            power = 0.5 * air_density * swept_area * (wind_speed ** 3)
+            logger.info(f"Theoretical power calculated: {power} W")
+            return power
+        except Exception as e:
+            logger.error(f"Error calculating theoretical power: {e}")
+            raise
+    
     def calculate_theoretical_power(self, wind_speed: float) -> float:
         """
         Calculate theoretical power output.

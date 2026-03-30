@@ -11,7 +11,7 @@ def test_mongodb():
         from pymongo.errors import ConnectionFailure
         
         # Try default local connection
-        mongo_uri = "mongodb://admin:password@localhost:27017/"
+        mongo_uri = "mongodb://127.0.0.1:27017/wpp_digital_twin"
         
         print("=" * 60)
         print("MongoDB Connectivity Test")

@@ -11,6 +11,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from pymongo import MongoClient
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,22 @@ class BlockchainSync:
     def __init__(self, rpc_url="http://localhost:8545"):
         self.rpc_url = rpc_url
         self.sync_log = []
-    
+        try:
+            self.mongo_client = MongoClient("mongodb://localhost:27017")
+            self.db = self.mongo_client["energy_data"]
+            self.records_collection = self.db["records"]
+            self._ensure_indexes()
+            logger.info("MongoDB connection established successfully.")
+        except Exception as e:
+            logger.error(f"Failed to connect to MongoDB: {e}")
+            raise
+
+    def _ensure_indexes(self):
+        """Ensure indexes for MongoDB collection."""
+        self.records_collection.create_index("key", unique=True)
+        self.records_collection.create_index("timestamp")
+        logger.info("Indexes ensured for MongoDB collection 'records'")
+
     def sync_batch_to_blockchain(self, hour: str, batch_hash: str) -> dict:
         """Simulate sending batch hash to blockchain."""
         # In real implementation, this would use web3.py to call smart contract
@@ -45,6 +61,40 @@ class BlockchainSync:
             result = self.sync_batch_to_blockchain(row['hour'], row['batch_hash'])
             results.append(result)
         return results
+
+    def transfer_data_to_off_chain(self, data: dict):
+        """Transfer data to MongoDB for off-chain storage."""
+        try:
+            logger.debug(f"Attempting to transfer data to MongoDB: {data}")
+            collection = self.mongo_client["energy_data"]["records"]
+            result = collection.update_one(
+                {"key": data["key"]},
+                {"$set": data},
+                upsert=True
+            )
+            if result.upserted_id:
+                logger.info(f"Data inserted into MongoDB with ID: {result.upserted_id}")
+            else:
+                logger.info(f"Data updated in MongoDB for key: {data['key']}")
+            return result.upserted_id
+        except Exception as e:
+            logger.error(f"Error transferring data to MongoDB: {e}")
+            raise
+
+    def transfer_data_to_on_chain(self, data: dict):
+        """Transfer data to the blockchain for on-chain storage."""
+        try:
+            tx = self.data_anchor.functions.storeData(
+                data["key"],
+                data["value"]
+            ).transact({'from': self.w3.eth.accounts[0]})
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx)
+            logger.info(f"Data transferred to blockchain. TX: {receipt.transactionHash.hex()}")
+            return receipt.transactionHash
+        except Exception as e:
+            logger.error(f"Error transferring data to blockchain: {e}")
+            raise
 
 def run_sync():
     """Main execution."""

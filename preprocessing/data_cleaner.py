@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import logging
 import os
+from pymongo import MongoClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -79,6 +80,8 @@ class SCADADataCleaner:
         self.min_wind = min_wind_speed
         self.max_wind = max_wind_speed
         self.report = {}
+        self.mongo_client = MongoClient("mongodb://localhost:27017")
+        self.db = self.mongo_client["wpp_digital_twin"]
     
     def load_data(self, csv_path: str) -> pd.DataFrame:
         """Load SCADA dataset from CSV."""
@@ -252,9 +255,30 @@ class SCADADataCleaner:
             logger.error(f"Error during chunked processing: {e}")
             raise
     
-    def run_full_pipeline(self, input_csv: str, output_csv: str) -> None:
+    def run_full_pipeline(self, input_file, output_file):
         """Execute full cleaning pipeline using chunked processing."""
-        self.run_full_pipeline_chunked(input_csv, output_csv, chunk_size=100000)
+        try:
+            # Load and preprocess data
+            df = self.load_data(input_file)
+            df = self.standardize_columns(df)
+            
+            # Save cleaned data
+            df.to_csv(output_file, index=False)
+            logger.info(f"Cleaned data saved to {output_file}")
+            
+            # Store in MongoDB
+            self.store_in_mongodb(df, "scada_cleaned")
+            return df
+        except Exception as e:
+            logger.error(f"Error during pipeline execution: {e}")
+            raise
+
+    def store_in_mongodb(self, df, collection_name):
+        """Store DataFrame in MongoDB."""
+        collection = self.db[collection_name]
+        records = df.to_dict(orient="records")
+        collection.insert_many(records)
+        logger.info(f"Stored {len(records)} records in MongoDB collection '{collection_name}'")
 
 def run_pipeline():
     """Main execution."""

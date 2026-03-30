@@ -2,7 +2,20 @@
 from pathlib import Path
 from data_cleaner import SCADADataCleaner, download_kaggle_dataset
 import sys
+import os
+
+# Debugging: Print the current Python path
+print("PYTHONPATH:", sys.path)
+
+# Ensure the project directory is in the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+    print("Added project root to PYTHONPATH:", project_root)
+
 from forecasting.models import ForecastingEngine
+import boto3
+import logging
 
 def main():
     """Execute preprocessing pipeline."""
@@ -55,6 +68,9 @@ def main():
         print("\n\u2713 Forecasting models trained successfully")
     else:
         print("\n\u274c Failed to train models: Insufficient data")
+
+    # Archive the cleaned data to S3
+    cleaner.archive_to_s3(output_file, "wpp-digital-twin", "scada_preprocessed.csv")
 
 if __name__ == "__main__":
     main()

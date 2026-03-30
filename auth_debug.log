@@ -1,0 +1,7 @@
+2026-03-30 21:18:11,634 - DEBUG - Extracted token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VyIiwiZXhwIjoxNzc0ODg...
+2026-03-30 21:18:11,634 - DEBUG - Decoding token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VyIiwiZXhwIjoxNzc0ODg...
+2026-03-30 21:18:11,635 - ERROR - JWT decoding error: Signature verification failed.
+2026-03-30 21:21:39,437 - DEBUG - Extracted token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VyIiwiZXhwIjoxNzc0ODg3NjkxfQ.Cdau_91PH0dz8BzthUz6Dp4l1VcdkLmyUM3_VKvzBmA
+2026-03-30 21:21:39,437 - DEBUG - Decoding token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VyIiwiZXhwIjoxNzc0ODg3NjkxfQ.Cdau_91PH0dz8BzthUz6Dp4l1VcdkLmyUM3_VKvzBmA
+2026-03-30 21:21:39,438 - DEBUG - Token decoded successfully: {'sub': 'newuser', 'exp': 1774887691}
+2026-03-30 21:21:39,438 - DEBUG - Decoded username: newuser

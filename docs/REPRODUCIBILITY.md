@@ -352,3 +352,17 @@ After successful reproduction:
 **Questions?** Check README.md or open a GitHub issue.
 
 *Last verified: March 2025 | Python 3.11 | All tests passing*
+
+## Tamper Detection Demo
+
+### Overview
+The tamper detection demo showcases how the system identifies and flags unauthorized changes to data.
+
+### Steps
+1. Modify a data record in MongoDB.
+2. Run the hashing verification script.
+3. Observe the flagged tampered record in the logs.
+
+### Explainability Layer
+- The explainability layer provides insights into model predictions and system decisions.
+- Use the `/explain` API endpoint to retrieve explanations for forecasting results.

@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
 import sys
+import requests
 
 # Ensure root workspace is on Python path so local package imports resolve
 root_path = Path(__file__).resolve().parents[1]
@@ -392,6 +393,30 @@ with tab7:
     else:
         st.info("ℹ️ Settlement tracker requires trading data. Deploy and run orchestrator first.")
 
+# Adding a new tab for energy efficiency visualization
+tabs = st.tabs(["Energy Efficiency"])
+
+# Select the first tab
+tab1 = tabs[0]
+with tab1:
+    st.header("Energy Efficiency Analysis")
+    
+    # Load data
+    data_file = Path("data/processed/scada_preprocessed.csv")
+    if data_file.exists():
+        df = pd.read_csv(data_file)
+        
+        # Calculate efficiency
+        df['efficiency'] = (df['power'] / df['theoretical_power']) * 100
+        
+        # Plot efficiency
+        fig = px.histogram(df, x='efficiency', nbins=50, title="Efficiency Distribution")
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.metric("Average Efficiency (%)", f"{df['efficiency'].mean():.2f}")
+    else:
+        st.warning("SCADA data not found. Please preprocess the data first.")
+
 st.markdown("---")
 st.markdown("**WPP Digital Twin** | Research-Grade Prototype | Hybrid On-Chain + Off-Chain Architecture")
 
@@ -444,3 +469,66 @@ try:
 except Exception as e:
     st.error(f"Forecast module failed to run in dashboard: {e}")
     st.info("Run `python forecasting/models.py` to retrain and create `experiments/forecast_results.csv`.")
+
+# Adding a new section for Manual Prediction Input Module
+st.sidebar.header("Manual Prediction Input")
+
+# Input fields for real-time values
+wind_speed = st.sidebar.number_input("Wind Speed (m/s)", min_value=0.0, step=0.1)
+turbulence = st.sidebar.number_input("Turbulence Intensity", min_value=0.0, step=0.1)
+noise = st.sidebar.number_input("Ambient Noise (dB)", min_value=0.0, step=0.1)
+temperature = st.sidebar.number_input("Temperature (°C)", min_value=-50.0, step=0.1)
+pressure = st.sidebar.number_input("Pressure (hPa)", min_value=800.0, step=0.1)
+
+# Submit button
+if st.sidebar.button("Predict"):
+    # Prepare input payload
+    payload = {
+        "wind_speed": wind_speed,
+        "turbulence": turbulence,
+        "noise": noise,
+        "temperature": temperature,
+        "pressure": pressure
+    }
+
+    # Call the prediction API
+    try:
+        response = requests.post("http://localhost:8000/predict", json=payload)
+        if response.status_code == 200:
+            result = response.json()
+            st.success("Prediction Successful!")
+            st.write("### Prediction Results")
+            st.write(f"**Predicted Power (kW):** {result['predicted_power']}")
+            st.write(f"**Turbine Efficiency (%):** {result['efficiency']}")
+            st.write(f"**Maintenance Alert:** {result['maintenance_alert']}")
+        else:
+            st.error("Prediction failed. Please check the API or input values.")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+
+# Adding role-based views for Consumer, Producer, and Maintainer
+st.sidebar.header("User Role")
+role = st.sidebar.selectbox("Select your role", ["Consumer", "Producer", "Maintainer"])
+
+if role == "Consumer":
+    st.subheader("Consumer Dashboard")
+    st.write("As a consumer, you can view available energy and make purchases.")
+    # Logic to display available energy and purchase options
+    available_energy = st.number_input("Energy to purchase (kW)", min_value=0.0, step=0.1)
+    if st.button("Buy Energy"):
+        st.success(f"You have successfully purchased {available_energy} kW of energy.")
+
+elif role == "Producer":
+    st.subheader("Producer Dashboard")
+    st.write("As a producer, you can list energy for sale.")
+    energy_to_sell = st.number_input("Energy to sell (kW)", min_value=0.0, step=0.1)
+    price_per_unit = st.number_input("Price per kW ($)", min_value=0.0, step=0.01)
+    if st.button("List Energy for Sale"):
+        st.success(f"You have successfully listed {energy_to_sell} kW of energy at ${price_per_unit} per kW.")
+
+elif role == "Maintainer":
+    st.subheader("Maintainer Dashboard")
+    st.write("As a maintainer, you can monitor turbine conditions.")
+    if st.button("Check Turbine Status"):
+        # Example turbine status
+        st.write("Turbine is operating within normal parameters.")

@@ -153,6 +153,30 @@ class ExperimentOrchestrator:
         
         self.results['exp_d'] = intervals
     
+    def evaluate_forecasting_models(self):
+        """Evaluate the performance of forecasting models."""
+        try:
+            results = []
+            for model in self.models:
+                score = model.evaluate(self.test_data)
+                results.append({"model": model.name, "score": score})
+                logger.info(f"Model {model.name} evaluation score: {score}")
+            return results
+        except Exception as e:
+            logger.error(f"Error evaluating forecasting models: {e}")
+            raise
+
+    def evaluate_hybrid_architecture(self):
+        """Evaluate the performance of the hybrid architecture."""
+        try:
+            on_chain_latency = self.measure_on_chain_latency()
+            off_chain_latency = self.measure_off_chain_latency()
+            logger.info(f"On-chain latency: {on_chain_latency}, Off-chain latency: {off_chain_latency}")
+            return {"on_chain_latency": on_chain_latency, "off_chain_latency": off_chain_latency}
+        except Exception as e:
+            logger.error(f"Error evaluating hybrid architecture: {e}")
+            raise
+
     def run_all(self):
         """Execute all experiments."""
         print("\n" + "█"*60)

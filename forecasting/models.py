@@ -11,6 +11,18 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 import logging
 from pathlib import Path
 import pickle
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from fastapi import Depends, HTTPException
+from auth.auth_manager import hash_password, verify_password, create_access_token, get_current_user
+from pydantic import BaseModel
+from datetime import timedelta
+from fastapi import Request
+from pydantic import BaseModel
+
+# Initialize logger
+logger = logging.getLogger("fastapi")
+logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +135,9 @@ class ForecastingEngine:
             logger.warning("No models found in checkpoint directory")
         return loaded
 
+# Define the FastAPI app
+app = FastAPI()
+
 def evaluate_forecast(X_test=None, y_test=None):
     """Evaluate forecast model performance.
 
@@ -184,3 +199,114 @@ def train_models():
 
 if __name__ == "__main__":
     train_models()
+
+class ForecastRequest(BaseModel):
+    wind_speed: float
+    rolling_avg_wind: float
+    lag_power: float
+
+@app.post("/forecast")
+def forecast_power(request: ForecastRequest):
+    """API endpoint to forecast power based on user input."""
+    try:
+        engine = ForecastingEngine()
+        if not engine.load_models():
+            raise HTTPException(status_code=500, detail="No trained models available.")
+
+        # Prepare input data
+        input_data = pd.DataFrame([{
+            "wind_speed": request.wind_speed,
+            "rolling_avg_wind": request.rolling_avg_wind,
+            "lag_power": request.lag_power
+        }])
+
+        # Ensure all models are loaded
+        predictions = {}
+        for name, model in engine.models.items():
+            predictions[name] = model.predict(input_data)[0]
+
+        return {"predictions": predictions}
+
+    except Exception as e:
+        logger.error(f"Error in forecasting: {e}")
+        raise HTTPException(status_code=500, detail="Error in forecasting.")
+
+class PredictionRequest(BaseModel):
+    wind_speed: float
+    rolling_avg_wind: float
+    lag_power: float
+
+@app.post("/predict")
+def predict_power(request: PredictionRequest):
+    """API endpoint to predict power based on user input."""
+    try:
+        engine = ForecastingEngine()
+        if not engine.load_models():
+            raise HTTPException(status_code=500, detail="No trained models available.")
+
+        # Prepare input data
+        input_data = pd.DataFrame([{
+            "wind_speed": request.wind_speed,
+            "rolling_avg_wind": request.rolling_avg_wind,
+            "lag_power": request.lag_power
+        }])
+
+        # Ensure all models are loaded
+        predictions = {}
+        for name, model in engine.models.items():
+            predictions[name] = model.predict(input_data)[0]
+
+        return {"predictions": predictions}
+
+    except Exception as e:
+        logger.error(f"Error in prediction: {e}")
+        raise HTTPException(status_code=500, detail="Error in prediction.")
+
+# User database simulation
+fake_users_db = {
+    "testuser": {
+        "username": "testuser",
+        "hashed_password": hash_password("testpassword"),
+        "role": "Producer"
+    },
+    "newuser": {
+        "username": "newuser",
+        "hashed_password": hash_password("newpassword"),
+        "role": "Consumer"
+    }
+}
+
+# Pydantic models
+class User(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# Authentication endpoints
+@app.post("/register")
+def register(user: User):
+    if user.username in fake_users_db:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    fake_users_db[user.username] = {
+        "username": user.username,
+        "hashed_password": hash_password(user.password),
+        "role": "Consumer"  # Default role
+    }
+    return {"message": "User registered successfully"}
+
+@app.post("/token", response_model=Token)
+def login(user: User):
+    db_user = fake_users_db.get(user.username)
+    if not db_user or not verify_password(user.password, db_user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    access_token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=30))
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me")
+def read_users_me(request: Request, current_user: str = Depends(get_current_user)):
+    logger.debug(f"Authorization header: {request.headers.get('authorization')}")
+    logger.debug(f"Current user: {current_user}")
+    return {"username": current_user, "role": fake_users_db[current_user]["role"]}

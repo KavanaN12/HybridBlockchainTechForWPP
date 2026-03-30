@@ -139,6 +139,20 @@ Real-World Wind Data
 - **Tech**: Streamlit, Plotly
 - **File**: `dashboard/app.py`
 
+## Hybrid Architecture Design
+
+### On-Chain Storage
+- Energy trading data and critical hashes are stored on the blockchain for immutability and transparency.
+- Smart contracts ensure secure and automated transactions.
+
+### Off-Chain Storage
+- MongoDB is used for storing detailed energy data and logs.
+- Optional archival to S3 for long-term storage and cost optimization.
+
+### Synchronization
+- A hashing layer ensures data integrity between on-chain and off-chain storage.
+- BlockchainSync class handles data transfer and verification.
+
 ## Data Flow
 
 ```

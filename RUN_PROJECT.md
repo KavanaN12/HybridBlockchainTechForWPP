@@ -39,7 +39,7 @@ node deploy_trading.js
 
 Expected result:
 - `EnergyToken` and `AuctionEngine` deployed
-- integration checks pass
+- Integration checks pass
 - `DEPLOYMENT COMPLETE`
 - `deployment_trading.json` + `.env` updated
 
@@ -96,13 +96,13 @@ python -m streamlit run dashboard/app.py
 ## 8) Quick sanity checks (post-run)
 
 ```powershell
-# check generated env values
+# Check generated env values
 type .env
 
-# first 5 trades
+# First 5 trades
 powershell -NoProfile -Command "Get-Content logs\trading_log.json | Select-Object -First 5"
 
-# re-run orchestrator if needed
+# Re-run orchestrator if needed
 python sync/trading_orchestrator.py
 ```
 
@@ -110,9 +110,9 @@ python sync/trading_orchestrator.py
 
 ## FAQ / troubleshooting
 
-- "Cannot connect to Ganache": make sure Hardhat node is running at `localhost:8545` and `.env` has deployed addresses.
-- "Forecast evaluation produced no results": run `python forecasting/models.py` and refresh dashboard.
-- "Forecast file format missing timestamp": this is now handled by blueprint fallback in `sync/trading_orchestrator.py` with synthetic fallback.
+- "Cannot connect to Ganache": Make sure Hardhat node is running at `localhost:8545` and `.env` has deployed addresses.
+- "Forecast evaluation produced no results": Run `python forecasting/models.py` and refresh dashboard.
+- "Forecast file format missing timestamp": This is now handled by blueprint fallback in `sync/trading_orchestrator.py` with synthetic fallback.
 
 ---
 

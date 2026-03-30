@@ -27,6 +27,7 @@ import pandas as pd
 import numpy as np
 from web3 import Web3
 from dotenv import load_dotenv
+import requests
 
 # Configure logging
 class SafeStreamHandler(logging.StreamHandler):
@@ -295,6 +296,51 @@ class TradingOrchestrator:
             logger.error(f"✗ Auction start failed: {e}")
             return False, None
     
+    def create_energy_token(self, to_address: str, energy_wh: int, hour: int):
+        """Mint energy tokens for the specified address."""
+        try:
+            tx = self.energy_token.functions.mintHourlyGeneration(
+                Web3.to_checksum_address(to_address),
+                hour,
+                energy_wh
+            ).transact({'from': self.w3.eth.accounts[0]})
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx)
+            logger.info(f"Minted {energy_wh} Wh to {to_address} for hour {hour}. TX: {receipt.transactionHash.hex()}")
+            return receipt.transactionHash
+        except Exception as e:
+            logger.error(f"Error minting energy tokens: {e}")
+            raise
+
+    def start_energy_auction(self, hour: int, energy_wh: int):
+        """Start an energy auction for the specified hour and energy amount."""
+        try:
+            tx = self.auction_engine.functions.startAuction(
+                hour,
+                energy_wh
+            ).transact({'from': self.w3.eth.accounts[0]})
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx)
+            logger.info(f"Started auction for {energy_wh} Wh at hour {hour}. TX: {receipt.transactionHash.hex()}")
+            return receipt.transactionHash
+        except Exception as e:
+            logger.error(f"Error starting auction: {e}")
+            raise
+
+    def settle_energy_auction(self, auction_id: int):
+        """Settle an energy auction and distribute tokens to the winner."""
+        try:
+            tx = self.auction_engine.functions.settleAuction(
+                auction_id
+            ).transact({'from': self.w3.eth.accounts[0]})
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx)
+            logger.info(f"Settled auction {auction_id}. TX: {receipt.transactionHash.hex()}")
+            return receipt.transactionHash
+        except Exception as e:
+            logger.error(f"Error settling auction: {e}")
+            raise
+
     def process_hour(self, hour: Optional[int] = None) -> Dict:
         """
         Process complete hourly trading cycle:
@@ -405,6 +451,60 @@ class TradingOrchestrator:
                 logger.error(f"Unexpected error in continuous mode: {e}")
                 import time
                 time.sleep(60)  # Retry after 1 minute
+
+
+class UserRoleHandler:
+    def __init__(self):
+        pass
+
+    def handle_producer_workflow(self, input_values):
+        """Handles the producer workflow."""
+        # Call prediction API
+        response = requests.post("http://localhost:8000/predict", json=input_values)
+        if response.status_code != 200:
+            raise Exception("Prediction API call failed.")
+
+        prediction = response.json()
+        # Logic to list available energy for sale
+        available_energy = prediction['predicted_power']
+        print(f"Energy available for sale: {available_energy} kW")
+        return available_energy
+
+    def handle_consumer_workflow(self, energy_to_buy):
+        """Handles the consumer workflow."""
+        # Logic to buy energy and record blockchain transaction
+        print(f"Consumer buying {energy_to_buy} kW of energy.")
+        # Blockchain transaction logic here
+
+    def handle_maintainer_workflow(self, prediction_output):
+        """Handles the maintainer workflow."""
+        # Monitor turbine condition
+        print(f"Turbine condition: {prediction_output['maintenance_alert']}")
+
+
+class WorkflowManager:
+    def __init__(self):
+        self.role_handler = UserRoleHandler()
+
+    def execute_workflow(self, role, input_values=None, energy_to_buy=None):
+        """Executes the workflow based on the user role."""
+        if role == "Producer":
+            available_energy = self.role_handler.handle_producer_workflow(input_values)
+            print(f"Producer listed {available_energy} kW for sale.")
+
+        elif role == "Consumer":
+            self.role_handler.handle_consumer_workflow(energy_to_buy)
+            print(f"Consumer purchased {energy_to_buy} kW of energy.")
+
+        elif role == "Maintainer":
+            prediction_output = {
+                "maintenance_alert": "No issues detected"  # Example placeholder
+            }
+            self.role_handler.handle_maintainer_workflow(prediction_output)
+            print("Maintainer monitored turbine condition.")
+
+        else:
+            print("Invalid role specified.")
 
 
 def main():

@@ -173,3 +173,88 @@
 2026-03-17 16:27:16,002 | INFO     |   Total energy in auctions: 2197 Wh
 
 2026-03-17 16:27:16,006 | INFO     | Trading log saved to: logs\trading_log.json
+2026-03-18 13:48:12,600 | INFO     | ✓ Connected to Ganache (chain ID: 31337)
+2026-03-18 13:48:12,655 | INFO     | ✓ Contracts initialized
+2026-03-18 13:48:12,655 | INFO     | 
+============================================================
+2026-03-18 13:48:12,655 | INFO     | Processing hour: 2026-03-18T13:30:00
+2026-03-18 13:48:12,655 | INFO     | ============================================================
+2026-03-18 13:48:12,678 | WARNING  | Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.
+2026-03-18 13:48:12,680 | INFO     | → Forecast: 2.35 kWh = 2350 tokens
+2026-03-18 13:48:12,722 | INFO     | ✓ Minted 2350 ENERGY tokens for hour 1773820800 (tx: 0x2aca0b...)
+2026-03-18 13:48:12,755 | INFO     | ✓ Started auction #1 for 2350 Wh (tx: 0x7754ab...)
+2026-03-18 13:48:12,755 | INFO     | ✓ Hour processed successfully
+2026-03-18 13:48:12,755 | INFO     |   Total energy in auctions: 2350 Wh
+
+2026-03-18 13:48:12,757 | INFO     | Trading log saved to: logs\trading_log.json
+2026-03-23 14:39:58,413 | INFO     | ✓ Connected to Ganache (chain ID: 31337)
+2026-03-23 14:39:58,453 | INFO     | ✓ Contracts initialized
+2026-03-23 14:39:58,454 | INFO     | 
+============================================================
+2026-03-23 14:39:58,454 | INFO     | Processing hour: 2026-03-23T14:30:00
+2026-03-23 14:39:58,454 | INFO     | ============================================================
+2026-03-23 14:39:58,475 | WARNING  | Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.
+2026-03-23 14:39:58,475 | INFO     | → Forecast: 2.41 kWh = 2414 tokens
+2026-03-23 14:39:58,514 | INFO     | ✓ Minted 2414 ENERGY tokens for hour 1774256400 (tx: 0x4b216d...)
+2026-03-23 14:39:58,539 | INFO     | ✓ Started auction #1 for 2414 Wh (tx: 0xee552c...)
+2026-03-23 14:39:58,539 | INFO     | ✓ Hour processed successfully
+2026-03-23 14:39:58,539 | INFO     |   Total energy in auctions: 2414 Wh
+
+2026-03-23 14:39:58,540 | INFO     | Trading log saved to: logs\trading_log.json
+2026-03-30 19:19:51,401 | INFO     | ✓ Connected to Ganache (chain ID: 31337)
+2026-03-30 19:19:51,444 | INFO     | ✓ Contracts initialized
+2026-03-30 19:19:51,444 | INFO     | 
+============================================================
+2026-03-30 19:19:51,444 | INFO     | Processing hour: 2026-03-30T18:30:00
+2026-03-30 19:19:51,444 | INFO     | ============================================================
+2026-03-30 19:19:51,463 | WARNING  | Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.
+2026-03-30 19:19:51,463 | INFO     | → Forecast: 3.64 kWh = 3640 tokens
+2026-03-30 19:19:51,504 | INFO     | ✓ Minted 3640 ENERGY tokens for hour 1774875600 (tx: 0x0c76fd...)
+2026-03-30 19:19:51,573 | INFO     | ✓ Started auction #1 for 3640 Wh (tx: 0x9190f1...)
+2026-03-30 19:19:51,573 | INFO     | ✓ Hour processed successfully
+2026-03-30 19:19:51,574 | INFO     |   Total energy in auctions: 3640 Wh
+
+2026-03-30 19:19:51,574 | INFO     | Trading log saved to: logs\trading_log.json
+2026-03-30 20:05:41,785 | INFO     | ✓ Connected to Ganache (chain ID: 31337)
+2026-03-30 20:05:41,832 | INFO     | ✓ Contracts initialized
+2026-03-30 20:05:41,832 | INFO     | 
+============================================================
+2026-03-30 20:05:41,833 | INFO     | Processing hour: 2026-03-30T19:30:00
+2026-03-30 20:05:41,833 | INFO     | ============================================================
+2026-03-30 20:05:41,849 | WARNING  | Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.
+2026-03-30 20:05:41,850 | INFO     | → Forecast: 3.16 kWh = 3161 tokens
+2026-03-30 20:05:41,896 | INFO     | ✓ Minted 3161 ENERGY tokens for hour 1774879200 (tx: 0x52593e...)
+2026-03-30 20:05:41,976 | INFO     | ✓ Started auction #1 for 3161 Wh (tx: 0x29e66d...)
+2026-03-30 20:05:41,976 | INFO     | ✓ Hour processed successfully
+2026-03-30 20:05:41,976 | INFO     |   Total energy in auctions: 3161 Wh
+
+2026-03-30 20:05:41,977 | INFO     | Trading log saved to: logs\trading_log.json
+2026-03-30 20:21:07,492 | ERROR    | Failed to initialize orchestrator: Cannot connect to Ganache at http://localhost:8545
+2026-03-30 20:21:59,142 | INFO     | ✓ Connected to Ganache (chain ID: 1337)
+2026-03-30 20:21:59,187 | INFO     | ✓ Contracts initialized
+2026-03-30 20:21:59,187 | INFO     | 
+============================================================
+2026-03-30 20:21:59,187 | INFO     | Processing hour: 2026-03-30T19:30:00
+2026-03-30 20:21:59,188 | INFO     | ============================================================
+2026-03-30 20:21:59,190 | WARNING  | Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.
+2026-03-30 20:21:59,191 | INFO     | → Forecast: 1.39 kWh = 1387 tokens
+2026-03-30 20:21:59,244 | INFO     | ✓ Minted 1387 ENERGY tokens for hour 1774879200 (tx: d475e16a...)
+2026-03-30 20:21:59,273 | INFO     | ✓ Started auction #1 for 1387 Wh (tx: 4f2f3e17...)
+2026-03-30 20:21:59,273 | INFO     | ✓ Hour processed successfully
+2026-03-30 20:21:59,273 | INFO     |   Total energy in auctions: 1387 Wh
+
+2026-03-30 20:21:59,274 | INFO     | Trading log saved to: logs\trading_log.json
+2026-03-30 21:52:25,190 | INFO     | ✓ Connected to Ganache (chain ID: 1337)
+2026-03-30 21:52:25,247 | INFO     | ✓ Contracts initialized
+2026-03-30 21:52:25,247 | INFO     | 
+============================================================
+2026-03-30 21:52:25,248 | INFO     | Processing hour: 2026-03-30T21:30:00
+2026-03-30 21:52:25,248 | INFO     | ============================================================
+2026-03-30 21:52:25,268 | WARNING  | Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.
+2026-03-30 21:52:25,270 | INFO     | → Forecast: 0.58 kWh = 575 tokens
+2026-03-30 21:52:25,422 | INFO     | ✓ Minted 575 ENERGY tokens for hour 1774886400 (tx: 0x46e889...)
+2026-03-30 21:52:25,459 | INFO     | ✓ Started auction #1 for 575 Wh (tx: 0x850b5f...)
+2026-03-30 21:52:25,459 | INFO     | ✓ Hour processed successfully
+2026-03-30 21:52:25,459 | INFO     |   Total energy in auctions: 575 Wh
+
+2026-03-30 21:52:25,461 | INFO     | Trading log saved to: logs\trading_log.json
