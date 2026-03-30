@@ -1,0 +1,5 @@
+{"energy": 0.45, "price_per_wh": 4.5e-05, "total_cost": 2.025e-05, "timestamp": "2026-03-31 01:02:36.631690", "user": "consumer_1"}
+{"energy": 0.4, "price_per_wh": 4.5e-05, "total_cost": 1.8e-05, "timestamp": "2026-03-31 01:03:33.495882", "user": "consumer_1"}
+{"energy": 0.9, "price_per_wh": 4.5e-05, "total_cost": 4.05e-05, "timestamp": "2026-03-31 01:04:15.107351", "user": "consumer_1"}
+{"energy": 1.5, "price_per_wh": 4.5e-05, "total_cost": 6.75e-05, "timestamp": "2026-03-31 01:11:35.834318", "user": "consumer_1"}
+{"energy": 1.55, "price_per_wh": 7.403135551605934e-05, "total_cost": 0.00011474860104989198, "timestamp": "2026-03-31 01:54:10.370327", "user": "consumer_1"}
