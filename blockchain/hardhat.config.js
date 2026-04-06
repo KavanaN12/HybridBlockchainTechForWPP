@@ -19,16 +19,10 @@ module.exports = {
   networks: {
     localhost: {
       url: "http://127.0.0.1:8545",
-      accounts: {
-        mnemonic: "myth like bonus scare over problem client lizard pioneer submit female collect",
-      },
     },
 
     ganache: {
       url: "http://127.0.0.1:8545",
-      accounts: {
-        mnemonic: "myth like bonus scare over problem client lizard pioneer submit female collect",
-      },
     },
 
     sepolia: {

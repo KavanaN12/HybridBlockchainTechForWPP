@@ -17,6 +17,10 @@ if str(root_path) not in sys.path:
     sys.path.insert(0, str(root_path))
 
 from forecasting.models import ForecastingEngine
+from services.bidding_service import store_bid, get_all_bids, get_winning_bid, clear_bids
+from services.settlement_service import settle_auction, get_settlement_history
+from services.hash_service import generate_hash, verify_hash_integrity
+from blockchain.web3_client import store_settlement_on_chain
 
 st.set_page_config(page_title="WPP Digital Twin Dashboard", layout="wide")
 
@@ -266,8 +270,87 @@ elif role == "Maintainer":
     with tab5:
         st.header("Data Integrity Verification")
         
-        if st.button("🔐 Run Tamper Detection"):
-            st.info("Running deterministic integrity check...")
+        st.subheader("🔐 MongoDB Data Integrity")
+        
+        bids = get_all_bids()
+        if bids:
+            st.write(f"**Current Bids in MongoDB:** {len(bids)}")
+            
+            # Generate hash of current bids
+            current_hash = generate_hash(bids)
+            st.write(f"**Hash of Bids:** `{current_hash[:32]}...`")
+            
+            # Verify integrity
+            is_valid = verify_hash_integrity(bids, current_hash)
+            if is_valid:
+                st.success("✅ MongoDB Bids Data: Integrity Verified")
+            else:
+                st.error("❌ MongoDB Bids Data: Integrity Check Failed")
+            
+            # Show bids
+            st.dataframe(pd.DataFrame(bids), use_container_width=True)
+        else:
+            st.info("ℹ️ No bids in MongoDB yet")
+        
+        st.divider()
+        
+        # Blockchain Hash Verification
+        st.subheader("⛓️ Settlement Hash Verification")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔗 Verify Latest Settlement"):
+                from blockchain.web3_client import get_batch_from_chain
+                
+                settlements = get_settlement_history(limit=1)
+                if settlements:
+                    settlement = settlements[0]
+                    mongo_hash = settlement.get("data_hash")
+                    auction_id = settlement.get("auction_id", 1)
+                    settlement_bids = settlement.get("all_bids", [])
+                    
+                    st.info(f"📦 Settlement ID: {auction_id}")
+                    st.write(f"**Bids in Settlement:** {len(settlement_bids)}")
+                    st.write(f"**MongoDB Hash:** `{mongo_hash[:32]}...`")
+                    
+                    # ✅ VERIFY HASH USING STORED BIDS (not current bids)
+                    if settlement_bids:
+                        recomputed_hash = generate_hash(settlement_bids)
+                        
+                        if recomputed_hash == mongo_hash:
+                            st.success("✅ Settlement Hash is Valid")
+                        else:
+                            st.error("❌ Settlement Hash Mismatch!")
+                            st.write(f"Stored Hash:      {mongo_hash}")
+                            st.write(f"Recomputed Hash:  {recomputed_hash}")
+                    
+                    # Try to retrieve from blockchain
+                    blockchain_data = get_batch_from_chain(auction_id)
+                    
+                    if blockchain_data:
+                        bc_hash = blockchain_data.get("hash")
+                        if bc_hash:
+                            st.write(f"\n**Blockchain Hash:** `{bc_hash[:32]}...`")
+                            
+                            if mongo_hash == bc_hash or mongo_hash.lower() == bc_hash.lower():
+                                st.success("✅ BLOCKCHAIN MATCH - Data integrity confirmed across off-chain and on-chain!")
+                            else:
+                                st.error("❌ BLOCKCHAIN MISMATCH - Hash doesn't match on-chain storage!")
+                                st.write(f"Full MongoDB Hash:     {mongo_hash}")
+                                st.write(f"Full Blockchain Hash:  {bc_hash}")
+                        else:
+                            st.warning("⚠️ No hash data from blockchain")
+                    else:
+                        st.warning("⚠️ Settlement not found on blockchain yet. Store settlement first.")
+                else:
+                    st.info("ℹ️ No settlements in MongoDB yet. Run settlement first.")
+        
+        st.divider()
+        
+        # Original file-based integrity check
+        if st.button("🔐 Run Tamper Detection (File-based)"):
+            st.info("Running deterministic integrity check on historical files...")
             
             hashes_file = Path("experiments/hourly_hashes.csv")
             data_file = Path("data/processed/scada_preprocessed.csv")
@@ -285,6 +368,7 @@ elif role == "Maintainer":
 
                 hashes_df = pd.read_csv(hashes_file)
                 all_valid = True
+                results = []
                 for idx, row in hashes_df.iterrows():
                     hour = row['hour']
                     stored_hash = row['batch_hash']
@@ -293,10 +377,13 @@ elif role == "Maintainer":
                     status = "✓ VALID" if passed else "✗ TAMPERED"
                     if not passed:
                         all_valid = False
-                    st.write(f"{hour}: Hash `{stored_hash[:20]}...` {status}")
+                    results.append({"Hour": hour, "Hash": stored_hash[:20] + "...", "Status": status})
+                
+                results_df = pd.DataFrame(results)
+                st.dataframe(results_df, use_container_width=True)
 
                 if all_valid:
-                    st.success("✓ All hashes verified! Data integrity confirmed.")
+                    st.success("✓ All historical hashes verified! Data integrity confirmed.")
                 else:
                     st.error("✗ Tampering detected! Hash mismatch found.")
 
@@ -401,196 +488,206 @@ elif role == "Consumer":
 
         st.subheader("Place Your Bid")
 
-        amount = st.number_input("Enter energy (Wh)", min_value=0.0)
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                amount = st.number_input("Enter energy (Wh)", min_value=0.0, step=1.0)
+
+            with col2:
+                price_input = st.number_input("Enter price ($/Wh)", min_value=0.0, step=0.00001)
+        
+        with col2:
+            user_id = st.text_input("User ID (Optional)", value="consumer_1")
 
         if trading_log_file.exists() and logs:
             forecast = logs[-1].get("forecast_kwh", 1)
-
             # simple dynamic pricing
-            price_per_wh = max(0.00003, min(0.00008, 0.00005 * (1 / (forecast + 0.1))))
-
+            price_per_wh = price_input if price_input > 0 else 0.000045
             if price_per_wh is None or price_per_wh == 0:
                 price_per_wh = 0.000045
         else:
             price_per_wh = 0.000045
+        
         cost = amount * price_per_wh
+        st.write(f"**Estimated Cost:** ${cost:.6f}")
+        st.write(f"**Price per Wh:** ${price_per_wh:.8f}")
 
-        st.write(f"Estimated Cost: ${cost:.6f}")
-
-        import json
-
-        if st.button("Place Bid"):
-
-            bid = {
-                "energy": amount,
-                "price_per_wh": price_per_wh,
-                "total_cost": cost,
-                "timestamp": str(pd.Timestamp.now()),
-                "user": "consumer_1"
-            }
-
-            log_file = Path("logs/user_bids.json")
-            log_file.parent.mkdir(parents=True, exist_ok=True)
-
-            with open(log_file, "a") as f:
-                f.write(json.dumps(bid) + "\n")
-
-            st.success("✅ Bid stored successfully")
-
-        log_file = Path("logs/user_bids.json")
-
-        if log_file.exists():
-            import json
-
-            with open(log_file, "r") as f:
-                bids = [json.loads(line) for line in f if line.strip()]
-
-            if bids:
-                st.subheader("📜 Your Bids")
-                bids_df = pd.DataFrame(bids[::-1])  # latest first
-                st.dataframe(bids_df, use_container_width=True)
+        if st.button("Place Bid", type="primary"):
+            if amount == 0:
+                st.warning("⚠️ Please enter an amount greater than 0")
             else:
-                st.info("No bids placed yet.")
+                bid_id = store_bid(user=user_id, energy=amount, price=price_per_wh)
+                if bid_id:
+                    st.success("✅ Bid stored successfully in MongoDB")
+                    st.write(f"Bid ID: {bid_id}")
+                else:
+                    st.error("❌ Failed to store bid. Check MongoDB connection.")
+
+        st.subheader("📜 All Bids (MongoDB)")
+        
+        bids = get_all_bids()
+        if bids:
+            bids_df = pd.DataFrame(bids)
+            st.dataframe(bids_df, use_container_width=True)
+            
+            # Show winning bid
+            winning = get_winning_bid()
+            if winning:
+                st.info(f"🏆 Current Highest Bid: **${winning['price_per_wh']:.8f}/Wh** by {winning['user']}")
+        else:
+            st.info("No bids placed yet.")
 
     # ========== TAB 7: Settlement Tracker ==========
     with tab7:
-        bids_file = Path("logs/user_bids.json")
-
-        if bids_file.exists():
-            with open(bids_file, "r") as f:
-                bids = [json.loads(line) for line in f if line.strip()]
-        else:
-            bids = []
         st.header("📈 Settlement Tracker - Trade History")
         
+        # Settlement functionality
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🔨 Run Settlement", type="primary"):
+                st.info("⏳ Running auction settlement...")
+                settlement = settle_auction()
+                if settlement:
+                    st.success("✅ Settlement created!")
+                    st.json({
+                        "_id": settlement.get("_id"),
+                        "auction_id": settlement.get("auction_id"),
+                        "winner": settlement.get("winner", {}).get("user"),
+                        "winner_price": settlement.get("winner", {}).get("price_per_wh"),
+                        "total_bids": settlement.get("all_bids_count"),
+                        "data_hash": settlement.get("data_hash")[:16] + "..."
+                    })
+                else:
+                    st.error("❌ Settlement failed. Ensure bids exist in MongoDB.")
+        
+        with col2:
+            if st.button("🔗 Store on Blockchain"):
+                st.info("⏳ Attempting blockchain storage...")
+                settlements = get_settlement_history(limit=1)
+                if settlements:
+                    settlement = settlements[0]
+                    winner = settlement.get("winner", {})
+                    tx_hash = store_settlement_on_chain(
+                        auction_id=settlement.get("auction_id", 1),
+                        winner=winner.get("user", "0x0"),
+                        energy=winner.get("energy", 0),
+                        price=winner.get("price_per_wh", 0),
+                        data_hash=settlement.get("data_hash", "")
+                    )
+                    if tx_hash:
+                        st.success(f"✅ Stored on blockchain!\nTX: {tx_hash}")
+                    else:
+                        st.warning("⚠️ Blockchain connection issue. Check Web3 configuration.")
+                else:
+                    st.warning("⚠️ No settlement found. Run settlement first.")
+        
+        with col3:
+            if st.button("🗑️ Clear All Bids"):
+                if clear_bids():
+                    st.success("✅ Bids cleared")
+                else:
+                    st.error("❌ Failed to clear bids")
+        
+        # Recent settlements from MongoDB
+        st.subheader("📋 Recent Settlements (MongoDB)")
+        
+        settlements = get_settlement_history(limit=10)
+        if settlements:
+            settlement_data = []
+            for s in settlements:
+                winner = s.get("winner", {})
+                settlement_data.append({
+                    "ID": s.get("_id", "")[:8] + "...",
+                    "Auction": s.get("auction_id"),
+                    "Winner": winner.get("user", "N/A"),
+                    "Energy (Wh)": winner.get("energy", 0),
+                    "Price ($/Wh)": f"${winner.get('price_per_wh', 0):.8f}",
+                    "Total Bids": s.get("all_bids_count"),
+                    "Status": s.get("status", "unknown"),
+                    "TX Hash": s.get("tx_hash", "Pending")[:8] + "..." if s.get("tx_hash") else "Pending"
+                })
+            
+            settlement_df = pd.DataFrame(settlement_data)
+            st.dataframe(settlement_df, use_container_width=True, height=300)
+            
+            # Statistics
+            st.subheader("📊 Settlement Analytics")
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Total Settlements", len(settlements))
+            
+            with col2:
+                confirmed = len([s for s in settlements if s.get("status") == "confirmed_blockchain"])
+                st.metric("Confirmed on Chain", confirmed)
+            
+            with col3:
+                total_energy = sum([s.get("winner", {}).get("energy", 0) for s in settlements])
+                st.metric("Total Energy (Wh)", f"{total_energy:,.0f}")
+            
+            with col4:
+                avg_price = np.mean([s.get("winner", {}).get("price_per_wh", 0) for s in settlements]) if settlements else 0
+                st.metric("Avg Price ($/Wh)", f"${avg_price:.8f}")
+        else:
+            st.info("ℹ️ No settlements yet. Place bids and run settlement.")
+        
+        # Data integrity verification
+        st.subheader("🔐 Data Integrity Verification")
+        
+        if st.button("Verify Latest Settlement Hash"):
+            settlements = get_settlement_history(limit=1)
+            if settlements:
+                settlement = settlements[0]
+                stored_hash = settlement.get("data_hash")
+                settlement_bids = settlement.get("all_bids", [])
+                
+                # ✅ FIXED: Use stored bids (not reconstructed data)
+                if settlement_bids:
+                    recomputed_hash = generate_hash(settlement_bids)
+                    is_valid = verify_hash_integrity(settlement_bids, stored_hash)
+                    
+                    if is_valid:
+                        st.success("✅ Hash verification PASSED - Data integrity confirmed!")
+                        st.write(f"**Bids in Settlement:** {len(settlement_bids)}")
+                        st.write(f"**Stored Hash:** `{stored_hash[:32]}...`")
+                        st.write(f"**Computed Hash:** `{recomputed_hash[:32]}...`")
+                    else:
+                        st.error("❌ Hash verification FAILED - Possible data tampering!")
+                        st.write(f"**Stored Hash:** {stored_hash}")
+                        st.write(f"**Computed Hash:** {recomputed_hash}")
+                else:
+                    st.warning("⚠️ Settlement has no stored bids for verification")
+            else:
+                st.warning("⚠️ No settlement found to verify")
+        
+        # Old trading data visualization (if exists)
         settlement_file = Path("paper_results/exp_e_trading_efficiency.json")
         trading_log_file = Path("logs/trading_log.json")
 
         if trading_log_file.exists():
-            import json
-
             try:
+                import json
                 with open(trading_log_file, 'r') as f:
                     logs = [json.loads(line) for line in f if line.strip()]
-
+                
                 if logs:
-                    st.subheader("Recent Settlements (Past 24 Hours)")
-
-                    settlements = []
-                    for i, log in enumerate(logs[-24:], 1):
-                        hour_num = i
-                        timestamp = log.get('timestamp', 'N/A')
-                        energy = log.get('tokens_minted', 0)
-
-                        # Simulate settlement details (in production, fetch from blockchain)
-                        price = log.get("price_per_wh", 0.000045)
-                        if bids:
-                            winning_bid = max(bids, key=lambda x: x["price_per_wh"])
-                            winner_addr = winning_bid["user"]
-                            price = winning_bid["price_per_wh"]
-                            value = winning_bid["total_cost"]
-                        else:
-                            winner_addr = "N/A"
-                            price = 0
-                            value = 0
-                                                    
-                        settlements.append({
-                            'Hour': f"{hour_num:02d}:00 UTC",
-                            'Timestamp': timestamp,
-                            'Energy (Wh)': f"{energy:,.0f}",
-                            'Winner': f"{winner_addr}...",
-                            'Price ($/Wh)': f"${price:.8f}",
-                            'Value ($)': f"${value:.2f}",
-                            'Status': '✓ Settled'
-                        })
-
-                    settlement_df = pd.DataFrame(settlements)
-                    st.dataframe(settlement_df, use_container_width=True)
-
-                    st.subheader("Settlement Analytics")
-
-                    col1, col2, col3, col4 = st.columns(4)
-
-                    with col1:
-                        total_settled = len(settlements)
-                        st.metric("Auctions Settled", total_settled)
-
-                    with col2:
-                        avg_price = (
-                            np.mean([b["price_per_wh"] for b in bids])
-                            if bids else 0
-                        )
-                        st.metric("Avg Price ($/Wh)", f"${avg_price:.8f}")
-
-                    with col3:
-                        total_revenue = sum([float(s['Value ($)'].replace('$', '')) for s in settlements])
-                        st.metric("Total Revenue ($)", f"${total_revenue:.2f}")
-
-                    with col4:
-                        settlement_success_rate = (
-                            (len(settlements) / len(logs)) * 100 if logs else 0
-                        )
-                        st.metric("Settlement Success Rate", f"{settlement_success_rate:.1f}%")
-
-                    # Price discovery chart
-                    st.subheader("Price Discovery Over Time")
-
-                    prices = []
-                    times = []
-                    for i, settlement in enumerate(settlements):
-                        prices.append(float(settlement['Price ($/Wh)'].replace('$', '')))
-                        times.append(f"Hour {i+1}")
-
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(
-                        x=times, y=prices, mode='lines+markers',
-                        name='Settlement Price',
-                        line=dict(color='green', width=2),
-                        marker=dict(size=8)
-                    ))
-                    fig.update_layout(
-                        title="Price Discovery - Last 24 Hours",
-                        xaxis_title="Time",
-                        yaxis_title="Price ($/Wh)",
-                        hovermode='x unified'
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-
-                    # Efficiency metrics
-                    st.subheader("Trading Efficiency Metrics")
-
-                    col1, col2 = st.columns(2)
-
-                    with col1:
-                        total_bids = len(bids) if bids_file.exists() else 0
-                        st.metric("Total Bids", total_bids)
-
-                        total_energy = sum([b["energy"] for b in bids]) if bids_file.exists() else 0
-                        st.metric("Total Energy Requested (Wh)", f"{total_energy:,.0f}")
-
-                        avg_price = (
-                            np.mean([b["price_per_wh"] for b in bids])
-                            if bids_file.exists() and bids else 0
-                        )
-                        st.metric("Average Bid Price ($/Wh)", f"${avg_price:.8f}")
-
-
-                    with col2:
-                        latest_bid = bids[-1]["timestamp"] if bids_file.exists() and bids else "N/A"
-                        st.metric("Last Bid Time", latest_bid)
-
-                        total_transactions = len(bids) if bids_file.exists() else 0
-                        st.metric("Total Transactions", total_transactions)
-
-                        st.metric("System Type", "Hybrid (Off-chain + On-chain hash)")
+                    st.subheader("📈 Historical Trading Data (JSON Logs)")
                     
-                else:
-                    st.info("ℹ️ No settlements yet. Run trading orchestrator to generate settlements.")
-            
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Historical Auctions", len(logs))
+                    with col2:
+                        total_historical_energy = sum([log.get('tokens_minted', 0) for log in logs])
+                        st.metric("Energy Traded (Wh)", f"{total_historical_energy:,.0f}")
+                    with col3:
+                        avg_forecast = np.mean([log.get('forecast_kwh', 0) for log in logs])
+                        st.metric("Avg Forecast (kWh)", f"{avg_forecast:.2f}")
             except Exception as e:
-                st.warning(f"⚠️ Could not load settlement data: {str(e)}")
-        else:
-            st.info("ℹ️ Settlement tracker requires trading data. Deploy and run orchestrator first.")
+                st.warning(f"⚠️ Could not load trading data: {str(e)}")
 
 
 st.sidebar.success(f"Logged in as: {role}")

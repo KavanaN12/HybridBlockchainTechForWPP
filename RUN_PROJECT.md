@@ -1,103 +1,378 @@
 # RUN_PROJECT.md
 
-## WPP Digital Twin - Full Start-to-Streamlit Guide
+## 🚀 WPP Digital Twin - Complete Start-to-Finish Guide
 
-This document describes the exact commands to run a complete local instance from Python environment activation through the Streamlit dashboard.
+This document provides **step-by-step instructions** to run the complete WPP Digital Twin system from scratch after closing all terminals.
+
+**System Architecture:**
+- 🔗 **Blockchain:** Hardhat Local Node (Ethereum)
+- 📦 **Database:** MongoDB (Local)
+- 🎨 **Frontend:** Streamlit Dashboard
+- ⚡ **Backend:** Python Services (Bidding, Settlement, Hashing)
 
 ---
 
-## 1) Activate Python virtual environment
+## ⏱️ Total Setup Time: ~5 minutes
+
+---
+
+## 📋 Prerequisites
+
+Before starting, ensure:
+- ✅ Python 3.9+ installed
+- ✅ Node.js 16+ installed
+- ✅ MongoDB installed on your system
+- ✅ Virtual environment at `d:\WPPDigitalTwin\.venv`
+- ✅ All dependencies from `requirements.txt` installed
+
+---
+
+## 🔄 Complete Startup Process (4 Easy Steps)
+
+### **STEP 1: Activate Python Virtual Environment**
+
+**Terminal 1 - Execute this:**
 
 ```powershell
-cd D:\WPPDigitalTwin
+cd d:\WPPDigitalTwin
 & .\.venv\Scripts\Activate.ps1
 ```
 
-- Confirm prompt shows `(venv)` or similar.
-- Python should run from `.venv`.
+**Expected Output:**
+```
+(venv) D:\WPPDigitalTwin>
+```
 
-## 2) Start Hardhat local blockchain (keep open)
+✅ You should see `(venv)` in the prompt
+
+---
+
+### **STEP 2: Start Hardhat Blockchain Node**
+
+**Terminal 1 - Execute this:**
 
 ```powershell
-cd D:\WPPDigitalTwin\blockchain
+cd d:\WPPDigitalTwin\blockchain
 npx hardhat node
 ```
 
-- Keep this terminal running (or set `isBackground: true`).
-- It reported accounts and RPC at `http://127.0.0.1:8545`.
+**Expected Output:**
+```
+Started HTTP and WebSocket JSON-RPC server at http://127.0.0.1:8545
 
-## 3) Compile and deploy contracts
-
-In a second terminal (activated venv):
-
-```powershell
-cd D:\WPPDigitalTwin\blockchain
-npx hardhat compile
-cd scripts
-node deploy_trading.js
+Accounts
+========
+Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (10000 ETH)
+...
+Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-Expected result:
-- `EnergyToken` and `AuctionEngine` deployed
-- Integration checks pass
-- `DEPLOYMENT COMPLETE`
-- `deployment_trading.json` + `.env` updated
+✅ Keep this terminal **ALWAYS OPEN** - it's the blockchain node!
+✅ You should see all 20 test accounts with 10,000 ETH each
 
-## 4) Run trading orchestrator (one-shot hour process)
+---
+
+### **STEP 3: Start MongoDB Database**
+
+**Terminal 2 - Open new PowerShell terminal and execute:**
 
 ```powershell
-cd D:\WPPDigitalTwin
-python sync/trading_orchestrator.py
+mongosh  
+no need of next line
+mongod --dbpath d:\WPPDigitalTwin\data\mongo
 ```
 
-Expected result:
-- Logs showing connection to Ganache + auction lifecycle
-- `logs/trading_log.json` gets written
-
-## 5) (Optional) Train forecast models
-
-```powershell
-cd D:\WPPDigitalTwin
-python forecasting/models.py
+**Expected Output:**
+```
+waiting for connections on port 27017
 ```
 
-or
+✅ Keep this terminal open - database is running
+
+---
+
+### **STEP 4: Launch Streamlit Dashboard**
+
+**Terminal 3 - Open new PowerShell terminal and execute:**
 
 ```powershell
-python -m forecasting.models
-```
-
-- Produces `experiments/forecast_results.csv` and `forecasting/models_checkpoint/*_model.pkl`.
-
-## 6) Run Streamlit dashboard
-
-If `streamlit` command works:
-
-```powershell
-cd D:\WPPDigitalTwin
+cd d:\WPPDigitalTwin
+& .\.venv\Scripts\Activate.ps1
 streamlit run dashboard/app.py
 ```
 
-If not:
-
-```powershell
-cd D:\WPPDigitalTwin
-python -m streamlit run dashboard/app.py
+**Expected Output:**
+```
+You can now view your Streamlit app in your browser.
+Local URL: http://localhost:8503
 ```
 
-- Open browser at `http://localhost:8501`.
+✅ Both services connected:
+```
+✓ MongoDB connected successfully
+✓ Web3 connected to blockchain
+```
 
-## 7) Validate key UI tabs
+---
 
-- Tab 6: Energy Marketplace should show `logs/trading_log.json` entries
-- Tab 7: Settlement Tracker should show auction info
-- Forecast block should show trained model metrics and not the warning message after step 5
+## 🌐 Access Your Dashboard
 
-## 8) Quick sanity checks (post-run)
+**Open your browser and go to:**
+
+```
+http://localhost:8503
+```
+
+You should see:
+- ⚡ **WPP Digital Twin Dashboard** title
+- 🎭 **Select your role** dropdown with 3 options:
+  - **Consumer** - Place bids, run settlements, store on blockchain
+  - **Maintainer** - Verify data integrity, check blockchain
+  - **Producer** - View SCADA data, forecasting, wind analysis
+
+---
+
+## 🧪 Test the System (5 Minutes)
+
+### **Test 1: Consumer - Place Bids**
+
+1. Select **Consumer** role
+2. Go to **Energy Marketplace** tab
+3. Enter:
+   - Energy: `50` (Wh)
+   - Price: `150` ($/Wh)
+4. Click **Place Bid**
+5. **Expected:** Bid appears in "Your Bids" table immediately
+
+**Time:** ~5 seconds
+
+---
+
+### **Test 2: Consumer - Run Settlement**
+
+1. Stay in **Consumer** role
+2. Go to **Settlement Tracker** tab
+3. Click **Run Settlement** button
+4. **Expected:** 
+   - Winner selected (highest price)
+   - Hash generated (SHA-256 of bid data)
+   - Settlement record created
+
+**Time:** <1 second
+
+---
+
+### **Test 3: Consumer - Store on Blockchain**
+
+1. Still in **Settlement Tracker**
+2. Click **Store on Blockchain** button
+3. **Expected:**
+   - ✅ Success message shown
+   - Transaction hash displayed
+   - Status changes to "confirmed_blockchain"
+
+**Time:** 1-3 seconds (local blockchain is instant)
+
+---
+
+### **Test 4: Maintainer - Verify Hash Integrity**
+
+1. Select **Maintainer** role
+2. Go to **Integrity Check** tab
+3. Click **Compare Latest Settlement Hash** button
+4. **Expected:**
+   ```
+   MongoDB Hash:     8b883fcf10c6fc037b629f7cbf3b3949017572fd11a6f983979995228dbbd305
+   Blockchain Hash:  8b883fcf10c6fc037b629f7cbf3b3949017572fd11a6f983979995228dbbd305
+   ✅ HASHES MATCH - Data integrity confirmed!
+   ```
+
+**Time:** ~2 seconds
+
+---
+
+## 📊 System Status Verification
+
+| Component | Status Check |
+|-----------|--------------|
+| **Hardhat Node** | Terminal 1 shows "Listening on 127.0.0.1:8545" |
+| **MongoDB** | Terminal 2 shows "waiting for connections on port 27017" |
+| **Dashboard** | Terminal 3 shows "Local URL: http://localhost:8503" |
+| **Web3** | Dashboard shows "✓ Web3 connected to blockchain" |
+| **MongoDB** | Dashboard shows "✓ MongoDB connected successfully" |
+
+✅ **All 5 indicators green = System fully operational!**
+
+---
+
+## 🔧 Advanced Configuration
+
+### **Contract Deployment (if needed)**
+
+If you need to redeploy the DataAnchor contract:
 
 ```powershell
-# Check generated env values
-type .env
+cd d:\WPPDigitalTwin\blockchain
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+This will:
+- Update `.env` with new contract address
+- Update `deployment_trading.json`
+- Test all contract functions
+- Display gas usage
+
+**Note:** This resets the blockchain state on the local Hardhat node
+
+---
+
+## 📁 Important Files
+
+| File | Purpose |
+|------|---------|
+| `.env` | Configuration with real contract address and private key |
+| `blockchain/web3_client.py` | Blockchain interaction layer |
+| `services/bidding_service.py` | Bid management (MongoDB) |
+| `services/settlement_service.py` | Settlement logic (MongoDB + Blockchain) |
+| `services/hash_service.py` | Hash generation and verification |
+| `dashboard/app.py` | Streamlit user interface |
+| `blockchain/DataAnchor.sol` | Smart contract for hash storage |
+
+---
+
+## ⚠️ Troubleshooting
+
+### **Problem: "Failed to connect to blockchain"**
+
+**Solution:**
+- Check Terminal 1 (Hardhat node) is running and shows "Listening on 127.0.0.1:8545"
+- Verify RPC URL in `.env`: `http://127.0.0.1:8545`
+- Restart Hardhat node if needed
+
+---
+
+### **Problem: "MongoDB connection error"**
+
+**Solution:**
+- Check Terminal 2 (MongoDB) is running
+- Verify MongoDB path: `d:\WPPDigitalTwin\data\mongo`
+- If data folder doesn't exist, create it: `mkdir d:\WPPDigitalTwin\data\mongo`
+- Restart MongoDB in Terminal 2
+
+---
+
+### **Problem: "Dashboard not loading at localhost:8503"**
+
+**Solution:**
+- Check Terminal 3 (Streamlit) shows "Local URL: http://localhost:8503"
+- Refresh browser or clear cache
+- Check if port 8503 is in use: `netstat -ano | findstr :8503`
+- Try different port: `streamlit run dashboard/app.py --server.port 8504`
+
+---
+
+### **Problem: "Hash verification failed"**
+
+**Solution:**
+- Ensure settlement was created BEFORE storing on blockchain
+- Order of operations: Place Bid → Run Settlement → Store on Blockchain
+- Click "Compare Latest Settlement Hash" immediately after storing
+
+---
+
+## 🎯 Daily Workflow (After Initial Setup)
+
+Once everything is set up, this is the minimal daily startup:
+
+**Terminal 1:**
+```powershell
+cd d:\WPPDigitalTwin\blockchain
+npx hardhat node
+```
+
+**Terminal 2:**
+```powershell
+mongod --dbpath d:\WPPDigitalTwin\data\mongo
+```
+
+**Terminal 3:**
+```powershell
+cd d:\WPPDigitalTwin
+& .\.venv\Scripts\Activate.ps1
+streamlit run dashboard/app.py
+```
+
+Then open browser to: `http://localhost:8503`
+
+---
+
+## 🏗️ System Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│              STREAMLIT DASHBOARD                     │
+│  (Consumer / Maintainer / Producer Role Selector)   │
+└────────────────┬────────────────────────────────────┘
+                 │
+     ┌───────────┼───────────┐
+     │           │           │
+     ▼           ▼           ▼
+┌─────────┐  ┌────────┐  ┌──────────┐
+│ Bidding │  │Settlem.│  │   Hash   │
+│Service  │  │Service │  │ Service  │
+└────┬────┘  └───┬────┘  └─────┬────┘
+     │           │             │
+     └───────────┼─────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+        ▼                 ▼
+    ┌────────┐      ┌──────────────┐
+    │MongoDB │      │  Blockchain  │
+    │(Bids)  │      │DataAnchor.sol│
+    └────────┘      └──────────────┘
+```
+
+---
+
+## ✅ System Ready!
+
+Your production-grade hybrid blockchain + MongoDB system is now **fully operational** and ready for use!
+
+**Key Features:**
+- ✅ Real Ethereum-like blockchain (Hardhat local)
+- ✅ MongoDB integration for off-chain data
+- ✅ Automatic hash verification
+- ✅ Blockchain data anchoring
+- ✅ Tamper detection
+- ✅ Real-time dashboard
+- ✅ Three user roles (Consumer/Maintainer/Producer)
+
+**Next Steps:**
+1. Place test bids
+2. Run settlements
+3. Store on blockchain
+4. Verify integrity
+5. Deploy to production when ready!
+
+---
+
+## 📞 Quick Reference
+
+| What | Command |
+|------|---------|
+| **Activate venv** | `& .\.venv\Scripts\Activate.ps1` |
+| **Start blockchain** | `npx hardhat node` (in `blockchain/` folder) |
+| **Start MongoDB** | `mongod --dbpath d:\WPPDigitalTwin\data\mongo` |
+| **Run dashboard** | `streamlit run dashboard/app.py` |
+| **Deploy contract** | `npx hardhat run scripts/deploy.js --network localhost` |
+| **Test hashing** | `python test_hash_verification.py` |
+| **Access dashboard** | `http://localhost:8503` |
+| **Contract address** | From `.env` file or deployment output |
+
+---
+
+**Good luck! Your system is ready to revolutionize wind power trading! 🌬️⚡**
 
 # First 5 trades
 powershell -NoProfile -Command "Get-Content logs\trading_log.json | Select-Object -First 5"

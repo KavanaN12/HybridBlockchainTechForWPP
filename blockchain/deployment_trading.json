@@ -1,29 +1,25 @@
 {
-  "timestamp": "2026-03-30T14:35:26.841Z",
-  "network": "hardhat",
+  "timestamp": "2026-03-31T00:00:00.000Z",
+  "network": "localhost",
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "rpcUrl": "http://127.0.0.1:8545",
   "contracts": {
-    "EnergyToken": {
-      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-      "symbol": "ENERGY",
-      "decimals": 0,
-      "description": "Renewable energy tokens (1 token = 1 Wh)"
-    },
-    "AuctionEngine": {
-      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      "turbineOwner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-      "description": "Sealed-bid P2P energy trading mechanism"
+    "DataAnchor": {
+      "address": "UPDATE_AFTER_DEPLOYMENT",
+      "description": "Data integrity and batch hash storage contract",
+      "functions": [
+        "storeBatchHash(uint hour, bytes32 hash, uint totalEnergy)",
+        "getBatch(uint hour)",
+        "verifyIntegrity(uint hour, bytes32 hash)",
+        "batchCount()"
+      ]
     }
   },
-  "testResults": {
-    "tokensMinted": 5000000,
-    "auctionStarted": true,
-    "bidsPlaced": 3,
-    "auctionSettled": true,
-    "gasSummary": {
-      "energyTokenDeploy": "varies",
-      "auctionEngineDeploy": "varies",
-      "settlementGas": 109629
-    }
-  }
+  "notes": [
+    "1. Run: cd blockchain && npx hardhat node",
+    "2. Run: npx hardhat run scripts/deploy.js --network localhost",
+    "3. Copy CONTRACT_ADDRESS from deployment output to .env",
+    "4. Copy PRIVATE_KEY to .env (use first hardhat test account)",
+    "5. Dashboard will use these values for blockchain integration"
+  ]
 }
