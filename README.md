@@ -71,36 +71,50 @@ WPPDigitalTwin/
 
 ## Architecture Summary
 
-### System layers
+The system is built as a hybrid architecture with three main domains:
 
+- **User Interface**: Streamlit dashboard for monitoring, bidding, settlement, and verification.
+- **Application Layer**: Python services for data processing, forecasting, twin validation, auction settlement, and blockchain integration.
+- **Persistence**: MongoDB for off-chain storage and a local Hardhat Ethereum node for on-chain anchoring.
+
+### System diagram
+
+```mermaid
+flowchart TB
+    UI["Streamlit Dashboard\n(Producer, Consumer, Maintainer)"]
+    App["Application Layer\n(Python services)\n- Preprocessing\n- Forecasting\n- Twin validation\n- Auction settlement\n- Hash anchoring"]
+    DB["Off-chain Storage\nMongoDB\n- Bids\n- Settlements\n- Twin results\n- Forecast outputs"]
+    BC["On-chain Anchors\nHardhat / Solidity\n- DataAnchor contract\n- Batch hash storage"]
+
+    UI -->|HTTP| App
+    App -->|MongoDB read/write| DB
+    App -->|JSON-RPC / contract calls| BC
+    DB -->|data & analytics| UI
+    BC -->|verification status| UI
 ```
 
-  USER INTERFACE (Streamlit)                            
-   Bidding, Settlement, Verification, Forecasting     
+### Component overview
 
-                  HTTP
-
-  APPLICATION LAYER (Python)                            
-   Data cleaning & preprocessing                      
-   Forecasting & twin validation                      
-   Auction settlement logic                            
-   Blockchain anchoring / verification                
-
-                  JSON-RPC / MongoDB
-
-  BLOCKCHAIN LAYER (Hardhat / Solidity)                 
-   Smart contracts for data anchoring                 
-
-                  Storage
-
-  DATABASE LAYER (MongoDB)                              
-   Bid data, settlement state, twin and forecast results 
-
-```
+- **Streamlit Dashboard** (`dashboard/app.py`)
+  - provides interactive role-based workflows for producers, consumers, and maintainers
+- **Preprocessing pipeline** (`preprocessing/run_pipeline.py`)
+  - ingests, cleans, and prepares SCADA data for modeling
+- **Forecasting engine** (`forecasting/models.py`)
+  - trains ML models and exposes prediction endpoints
+- **Digital twin validation** (`twin/validate_twin.py`)
+  - compares model output against real wind turbine behavior
+- **Auction and settlement services** (`services/settlement_service.py`)
+  - selects winning bids, computes settlement hashes, and stores results
+- **Hashing and integrity** (`services/hash_service.py`)
+  - produces SHA-256 batch hashes for verification
+- **Blockchain integration** (`blockchain/web3_client.py`)
+  - anchors settlement hashes on Ethereum via Hardhat
+- **Database client** (`database/mongo_client.py`)
+  - manages MongoDB persistence for bids, settlements, and analytics
 
 ---
 
-##  Setup Instructions
+## Setup Instructions
 
 ### 1. Create and activate the Python environment
 
