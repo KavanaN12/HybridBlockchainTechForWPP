@@ -44,6 +44,12 @@ jobs:
           sleep 3
           echo "Ganache PID: $GANACHE_PID"
       
+      - name: Create CI .env file
+        run: |
+          if [ ! -f .env ]; then
+            echo "# CI environment file" > .env
+          fi
+
       - name: Deploy trading contracts
         run: |
           cd blockchain
@@ -76,7 +82,7 @@ jobs:
       
       - name: Save results as artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trading-experiment-results
           path: |

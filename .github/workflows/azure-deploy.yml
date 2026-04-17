@@ -55,13 +55,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/wpp-digital-twin:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/wpp-digital-twin:latest
+        run: |
+          OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          docker buildx build --push \
+            --tag ghcr.io/${OWNER}/wpp-digital-twin:${GITHUB_SHA} \
+            --tag ghcr.io/${OWNER}/wpp-digital-twin:latest \
+            .
 
       - name: Publish build manifest
         run: |

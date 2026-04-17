@@ -49,6 +49,12 @@ jobs:
           cd blockchain
           npx hardhat compile
           echo "✓ Contracts compiled successfully"
+
+      - name: Create CI .env file
+        run: |
+          if [ ! -f .env ]; then
+            echo "# CI environment file" > .env
+          fi
       
       - name: Deploy EnergyToken + AuctionEngine
         run: |
@@ -92,6 +98,11 @@ jobs:
           npx ganache-cli --deterministic &
           sleep 3
           
+          # Prepare CI env file for deploy script
+          if [ ! -f ../.env ]; then
+            echo "# CI environment file" > ../.env
+          fi
+
           # Run basic deployment test
           npx hardhat run scripts/deploy_trading.js --network localhost
           
