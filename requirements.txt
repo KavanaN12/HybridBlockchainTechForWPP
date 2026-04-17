@@ -16,6 +16,7 @@ web3==6.11.1
 eth-keys==0.4.0
 eth-account==0.10.0
 python-dotenv==1.0.0
+boto3==1.26.202
 
 # Database
 motor==3.3.2
@@ -32,6 +33,5 @@ black==23.12.0
 flake8==6.1.0
 
 # Utilities
-python-dotenv==1.0.0
 requests==2.31.0
 pyyaml==6.0.1

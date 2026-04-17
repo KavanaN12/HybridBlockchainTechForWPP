@@ -14,9 +14,19 @@ jobs:
   test-and-validate:
     runs-on: ubuntu-latest
     name: Test & Validate Code
+    permissions:
+      contents: read
     
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -31,11 +41,11 @@ jobs:
       
       - name: Run linting
         run: |
-          pylint sync/*.py dashboard/*.py --exit-zero
+          pylint sync/*.py dashboard/*.py
       
       - name: Run pytest
         run: |
-          pytest tests/ -v --tb=short || true
+          pytest tests/ -v --tb=short
       
       - name: Check syntax
         run: |
@@ -129,7 +139,7 @@ jobs:
         run: |
           if [ "${{ needs.deployment-readiness.result }}" == "success" ]; then
             echo "✅ DEPLOYMENT READY - All checks passed"
-            echo "Next: Deploy to AWS/Azure using manual workflow or CD platform"
+            echo "Next: Use the built container image from GHCR or deploy locally with Docker"
           else
             echo "❌ DEPLOYMENT BLOCKED - Fix failing checks"
           fi

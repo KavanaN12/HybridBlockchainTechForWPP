@@ -258,3 +258,18 @@
 2026-03-30 21:52:25,459 | INFO     |   Total energy in auctions: 575 Wh
 
 2026-03-30 21:52:25,461 | INFO     | Trading log saved to: logs\trading_log.json
+2026-04-07 13:18:50,383 | INFO     | ✓ Connected to Ganache (chain ID: 31337)
+2026-04-07 13:18:50,442 | INFO     | ✓ Contracts initialized
+2026-04-07 13:18:50,443 | INFO     | Processing hour: 0
+2026-04-07 13:18:50,444 | INFO     | 
+============================================================
+2026-04-07 13:18:50,444 | INFO     | Processing hour: 1970-01-01T05:30:00
+2026-04-07 13:18:50,444 | INFO     | ============================================================
+2026-04-07 13:18:50,446 | WARNING  | Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.
+2026-04-07 13:18:50,447 | INFO     | → Forecast: 3.53 kWh = 3532 tokens
+2026-04-07 13:18:50,489 | INFO     | ✓ Minted 3532 ENERGY tokens for hour 0 (tx: 0x94a015...)
+2026-04-07 13:18:50,518 | INFO     | ✓ Started auction #1 for 3532 Wh (tx: 0x807260...)
+2026-04-07 13:18:50,519 | INFO     | ✓ Hour processed successfully
+2026-04-07 13:18:50,519 | INFO     |   Total energy in auctions: 3532 Wh
+
+2026-04-07 13:18:50,521 | INFO     | Trading log saved to: logs\trading_log.json

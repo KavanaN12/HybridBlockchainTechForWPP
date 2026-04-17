@@ -14,7 +14,6 @@ if project_root not in sys.path:
     print("Added project root to PYTHONPATH:", project_root)
 
 from forecasting.models import ForecastingEngine
-import boto3
 import logging
 
 def main():
@@ -70,7 +69,11 @@ def main():
         print("\n\u274c Failed to train models: Insufficient data")
 
     # Archive the cleaned data to S3
-    cleaner.archive_to_s3(output_file, "wpp-digital-twin", "scada_preprocessed.csv")
+    archived = cleaner.archive_to_s3(output_file, "wpp-digital-twin", "scada_preprocessed.csv")
+    if archived:
+        print("\n✓ Cleaned data archived to S3")
+    else:
+        print("\n⚠ S3 archive skipped or failed. Check AWS credentials and network settings.")
 
 if __name__ == "__main__":
     main()

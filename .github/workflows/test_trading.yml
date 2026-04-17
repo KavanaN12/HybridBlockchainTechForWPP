@@ -17,8 +17,10 @@ jobs:
     name: Python Trading Unit Tests
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -27,7 +29,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-cov
       
@@ -42,9 +44,11 @@ jobs:
   solidity-lint-check:
     name: Solidity Lint Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Check for Solidity syntax
         run: |
@@ -57,9 +61,11 @@ jobs:
   code-quality:
     name: Code Quality Checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4

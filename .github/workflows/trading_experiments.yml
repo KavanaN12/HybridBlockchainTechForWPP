@@ -9,9 +9,11 @@ jobs:
   run-trading-experiments:
     name: Run Experiment E (Trading Efficiency)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -19,13 +21,13 @@ jobs:
           python-version: '3.11'
       
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
       
       - name: Install Python dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
       
       - name: Install Hardhat
@@ -81,27 +83,21 @@ jobs:
             paper_results/exp_e_trading_efficiency.json
             logs/
       
-      - name: Commit results back to repo
+      - name: Skip auto-commit in CI
         if: success()
         run: |
-          git config user.name "CI Bot"
-          git config user.email "ci@example.com"
-          
-          git add experiments/exp_e_trading_efficiency.csv paper_results/exp_e_trading_efficiency.json || true
-          
-          if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "Auto: Update trading efficiency experiment results"
-            git push || true
-          fi
+          echo "Auto-commit is disabled in CI workflows to prevent recursive workflow runs."
   
   generate-report:
     name: Generate Trading Performance Report
     runs-on: ubuntu-latest
     needs: run-trading-experiments
     if: success()
+    permissions:
+      contents: read
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4

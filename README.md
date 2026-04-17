@@ -250,24 +250,19 @@ docker build -f docker/Dockerfile -t wpp-twin:latest .
 
 ### GitHub Actions Setup
 
-1. Add Secret to GitHub:
-   - Go to GitHub Repo → Settings → Secrets → Add `AZURE_CREDENTIALS`.
-   - Generate credentials:
-     ```powershell
-     az login
-     az ad sp create-for-rbac --name "WPP-GitHub" --role contributor
-     ```
-   - Copy the JSON output and paste it as the secret value.
+1. No Azure account is required.
+   - This repo now builds and publishes the container image to GitHub Container Registry (GHCR) for free.
+   - No external cloud credentials are necessary for the CI pipeline.
 
 2. Push Code:
    ```powershell
    git add .
-   git commit -m "Setup CI/CD"
+   git commit -m "Setup free CI/CD"
    git push origin main
    ```
 
-3. Watch Deployment:
-   - Navigate to GitHub → Actions to see live logs.
+3. Watch Build:
+   - Navigate to GitHub → Actions to see live logs and the GHCR image publish step.
 
 ### Regular Workflow
 1. Write/Edit Code (e.g., dashboard, contracts).

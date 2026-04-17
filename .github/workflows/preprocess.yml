@@ -19,7 +19,8 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install pandas numpy scikit-learn python-dotenv
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
       
       - name: Check for data
         run: |
@@ -31,4 +32,3 @@ jobs:
       - name: Run preprocessing
         run: |
           cd preprocessing && python run_pipeline.py
-        continue-on-error: true

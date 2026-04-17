@@ -280,6 +280,31 @@ class SCADADataCleaner:
         collection.insert_many(records)
         logger.info(f"Stored {len(records)} records in MongoDB collection '{collection_name}'")
 
+    def archive_to_s3(self, local_file, bucket_name, s3_key):
+        """Upload a local file to S3 if AWS credentials are configured."""
+        try:
+            import boto3
+        except ImportError:
+            logger.warning("boto3 is not installed; S3 archive skipped.")
+            return False
+
+        aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY")
+        aws_region = os.getenv("AWS_REGION", "us-east-1")
+
+        if not aws_access_key or not aws_secret:
+            logger.warning("AWS credentials are not configured; S3 archive skipped.")
+            return False
+
+        try:
+            s3 = boto3.client("s3", region_name=aws_region)
+            s3.upload_file(str(local_file), bucket_name, s3_key)
+            logger.info(f"Uploaded {local_file} to s3://{bucket_name}/{s3_key}")
+            return True
+        except Exception as e:
+            logger.warning(f"S3 archive failed: {e}")
+            return False
+
 def run_pipeline():
     """Main execution."""
     cleaner = SCADADataCleaner()
