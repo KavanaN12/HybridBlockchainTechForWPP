@@ -197,6 +197,10 @@ class TradingExperiment:
         eth_price_usd = 1500
         cost_per_kwh_usd = cost_per_kwh_eth * eth_price_usd
         
+        cost_per_kwh_usd_float = float(cost_per_kwh_usd)
+        daily_cost_eth = float(total_cost_eth * 24)
+        daily_cost_usd_at_1500 = cost_per_kwh_usd_float * kwh_per_hour * 24
+        
         metrics = {
             'test': 'gas_costs',
             'kwh_per_auction': kwh_per_hour,
@@ -207,11 +211,11 @@ class TradingExperiment:
             'gas_price_gwei': gas_price_gwei,
             'total_cost_eth': float(total_cost_eth),
             'cost_per_kwh_eth': float(cost_per_kwh_eth),
-            'cost_per_kwh_usd_at_1500': float(cost_per_kwh_usd),
+            'cost_per_kwh_usd_at_1500': cost_per_kwh_usd_float,
             'daily_auctions': 24,
-            'daily_cost_eth': float(total_cost_eth * 24),
-            'daily_cost_usd_at_1500': float(cost_per_kwh_usd * kwh_per_hour * 24),
-            'conclusion': f"✓ ~${cost_per_kwh_usd:.6f} per kWh (at ETH=$1500). Viable for B2B trading"
+            'daily_cost_eth': daily_cost_eth,
+            'daily_cost_usd_at_1500': daily_cost_usd_at_1500,
+            'conclusion': f"✓ ~${cost_per_kwh_usd_float:.6f} per kWh (at ETH=$1500). Viable for B2B trading"
         }
         
         logger.info(f"✓ Test 3 Results:")
