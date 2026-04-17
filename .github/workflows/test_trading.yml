@@ -2,15 +2,8 @@ name: Trading Tests
 
 on:
   push:
-    branches: [main, develop]
-    paths:
-      - 'blockchain/contracts/EnergyToken.sol'
-      - 'blockchain/contracts/AuctionEngine.sol'
-      - 'sync/trading_orchestrator.py'
-      - 'experiments/exp_e_trading_efficiency.py'
-      - 'tests/test_trading.py'
   pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   trading-unit-tests:

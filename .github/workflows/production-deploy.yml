@@ -3,11 +3,6 @@ name: Production Deployment
 on:
   push:
     branches: [main]
-    paths:
-      - 'dashboard/**'
-      - 'sync/**'
-      - 'blockchain/**'
-      - 'requirements.txt'
   workflow_dispatch:
 
 jobs:
