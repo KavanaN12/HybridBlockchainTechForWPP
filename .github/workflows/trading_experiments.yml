@@ -147,16 +147,9 @@ jobs:
           EOF
       
       - name: Commit report
+        if: false
         run: |
-          git config user.name "CI Bot"
-          git config user.email "ci@example.com"
-          
-          git add paper_results/trading_report.md || true
-          
-          if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "Auto: Generate trading efficiency report"
-            git push || true
-          fi
+          echo "Auto-commit is disabled in CI workflows to prevent recursive workflow runs."
   
   notify-results:
     name: Notify Results

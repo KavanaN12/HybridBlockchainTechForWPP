@@ -10,6 +10,10 @@ on:
       - 'blockchain/scripts/deploy_trading.js'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   ganache-setup:
     name: Setup Ganache + Deploy Trading Contracts
