@@ -16,7 +16,7 @@ web3==6.11.1
 eth-keys==0.4.0
 eth-account==0.10.0
 python-dotenv==1.0.0
-boto3==1.26.202
+boto3
 
 # Database
 motor==3.3.2

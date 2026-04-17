@@ -34,8 +34,3 @@ jobs:
         run: |
           pytest tests/ -v --cov=preprocessing --cov=twin --cov=forecasting --cov-report=term
       
-      - name: Upload coverage
-        if: always() && secrets.CODECOV_TOKEN != ''
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
