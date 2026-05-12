@@ -128,7 +128,7 @@ class WindTurbineModel:
             'samples': len(df)
         }
         
-        logger.info(f"Twin Validation Results:")
+        logger.info("Twin Validation Results:")
         logger.info(f"  MAE: {mae:.1f} kW ({mae_pct:.1f}%)")
         logger.info(f"  RMSE: {rmse:.1f} kW ({rmse_pct:.1f}%)")
         logger.info(f"  R²: {r2:.3f}")
@@ -150,7 +150,7 @@ class WindTurbineModel:
             'abs_error': 'mean'
         })
         
-        logger.info(f"\nErrors by Operating Zone:")
+        logger.info("\nErrors by Operating Zone:")
         logger.info(zone_stats)
         
         return zone_stats

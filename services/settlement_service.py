@@ -1,9 +1,13 @@
 """Settlement service for auction settlement and blockchain integration."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict
+from bson.errors import InvalidId
+from pymongo.errors import PyMongoError
 from database.mongo_client import bids_collection, settlement_collection
 from services.hash_service import generate_hash
 import logging
+
+MONGO_CONN_ERROR = "MongoDB connection not available"
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +23,7 @@ def settle_auction(auction_id: int = 1) -> Optional[Dict]:
         Settlement record or None if failed
     """
     if bids_collection is None or settlement_collection is None:
-        logger.error("MongoDB connection not available")
+        logger.error(MONGO_CONN_ERROR)
         return None
         
     try:
@@ -44,7 +48,7 @@ def settle_auction(auction_id: int = 1) -> Optional[Dict]:
             "all_bids_count": len(bids),
             "data_hash": data_hash,
             "tx_hash": None,  # Will be updated when stored on blockchain
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "status": "pending_blockchain"
         }
         
@@ -55,7 +59,7 @@ def settle_auction(auction_id: int = 1) -> Optional[Dict]:
         logger.info(f"✓ Settlement created: {settlement['_id']}")
         return settlement
         
-    except Exception as e:
+    except PyMongoError as e:
         logger.error(f"✗ Error settling auction: {e}")
         return None
 
@@ -72,7 +76,7 @@ def update_settlement_with_blockchain_tx(settlement_id: str, tx_hash: str) -> bo
         True if successful
     """
     if settlement_collection is None:
-        logger.error("MongoDB connection not available")
+        logger.error(MONGO_CONN_ERROR)
         return False
         
     try:
@@ -84,7 +88,7 @@ def update_settlement_with_blockchain_tx(settlement_id: str, tx_hash: str) -> bo
                 "$set": {
                     "tx_hash": tx_hash,
                     "status": "confirmed_blockchain",
-                    "confirmation_time": datetime.utcnow()
+                    "confirmation_time": datetime.now(timezone.utc)
                 }
             }
         )
@@ -96,7 +100,7 @@ def update_settlement_with_blockchain_tx(settlement_id: str, tx_hash: str) -> bo
             logger.warning(f"Settlement {settlement_id} not found")
             return False
             
-    except Exception as e:
+    except (PyMongoError, InvalidId) as e:
         logger.error(f"✗ Error updating settlement: {e}")
         return False
 
@@ -112,7 +116,7 @@ def get_settlement_history(limit: int = 10) -> list:
         List of settlement records
     """
     if settlement_collection is None:
-        logger.error("MongoDB connection not available")
+        logger.error(MONGO_CONN_ERROR)
         return []
         
     try:
@@ -128,6 +132,6 @@ def get_settlement_history(limit: int = 10) -> list:
             
         return settlements
         
-    except Exception as e:
+    except PyMongoError as e:
         logger.error(f"✗ Error fetching settlement history: {e}")
         return []

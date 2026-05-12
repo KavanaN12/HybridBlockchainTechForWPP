@@ -1,0 +1,48 @@
+# Virtual environments
+venv
+.venv
+wsl_venv
+
+# Python cache
+__pycache__
+.pytest_cache
+.coverage
+coverage
+htmlcov
+
+# Git
+.git
+.gitignore
+
+# Logs
+logs
+*.log
+
+# Node modules
+node_modules
+
+# Build artifacts
+dist
+build
+
+# Data / datasets
+data
+paper_results
+notebooks
+
+# Model files
+models_checkpoint
+*.pth
+*.pt
+*.h5
+*.joblib
+*.pickle
+*.pkl
+
+# Blockchain cache/artifacts
+blockchain/artifacts
+blockchain/cache
+
+# Misc
+*.csv
+.env

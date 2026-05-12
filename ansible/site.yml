@@ -1,0 +1,79 @@
+---
+- name: WPP Digital Twin Infrastructure Setup
+  hosts: local
+  connection: local
+
+  tasks:
+
+    - name: Create logs directory
+      file:
+        path: /mnt/d/WPPDigitalTwin/logs
+        state: directory
+
+    - name: Create Datadog config directory
+      file:
+        path: /etc/datadog-agent/conf.d/wpp.d
+        state: directory
+      become: yes
+
+    - name: Copy Datadog log config
+      copy:
+        src: datadog/wpp_logs.yaml
+        dest: /etc/datadog-agent/conf.d/wpp.d/conf.yaml
+      become: yes
+
+    - name: Check Docker installation
+      command: docker --version
+      register: docker_version
+
+    - name: Print Docker version
+      debug:
+        var: docker_version.stdout
+
+    - name: Validate Docker Compose file
+      command: docker compose config
+      args:
+        chdir: /mnt/d/WPPDigitalTwin
+      register: compose_check
+
+    - name: Print compose validation
+      debug:
+        var: compose_check.stdout
+
+    - name: Build Docker containers only if requested
+      command: docker compose build
+      args:
+        chdir: /mnt/d/WPPDigitalTwin
+      when: build_images is defined and build_images == "true"
+
+    - name: Start Docker containers
+      command: docker compose up -d
+      args:
+        chdir: /mnt/d/WPPDigitalTwin
+
+    - name: Wait for containers to stabilize
+      pause:
+        seconds: 10
+
+    - name: Verify FastAPI health endpoint
+      uri:
+        url: http://localhost:8000/docs
+        method: GET
+        status_code: 200
+
+    - name: Verify Streamlit dashboard
+      uri:
+        url: http://localhost:8501
+        method: GET
+        status_code: 200
+
+    - name: Check running containers
+      command: docker ps
+      register: docker_ps
+
+    - name: Print running containers
+      debug:
+        var: docker_ps.stdout
+
+    - name: Remove stopped containers
+      command: docker container prune -f

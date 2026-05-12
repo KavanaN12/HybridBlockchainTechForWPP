@@ -1,0 +1,34 @@
+services:
+
+  wpp-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: wpp-dashboard
+
+    ports:
+      - "8501:8501"
+
+    restart: unless-stopped
+
+    volumes:
+      - ./logs:/app/logs
+
+    depends_on:
+      - wpp-api
+
+  wpp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+
+    container_name: wpp-api
+
+    ports:
+      - "8000:8000"
+
+    restart: unless-stopped
+
+    volumes:
+      - ./logs:/app/logs

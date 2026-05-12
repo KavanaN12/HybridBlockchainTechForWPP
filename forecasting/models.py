@@ -2,30 +2,92 @@
 forecasting/models.py
 ML-based power forecasting models
 """
+
+from ddtrace import patch_all
+patch_all()
+
+import logging
+from pathlib import Path
+import pickle
+from datetime import timedelta
+
 import pandas as pd
 import numpy as np
+
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-import logging
-from pathlib import Path
-import pickle
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from fastapi import Depends, HTTPException
-from auth.auth_manager import hash_password, verify_password, create_access_token, get_current_user
-from pydantic import BaseModel
-from datetime import timedelta
-from fastapi import Request
+
+from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel
 
-# Initialize logger
-logger = logging.getLogger("fastapi")
-logging.basicConfig(level=logging.DEBUG)
+from auth.auth_manager import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    get_current_user
+)
 
-logger = logging.getLogger(__name__)
+# =========================================================
+# LOGGING CONFIGURATION
+# =========================================================
 
+log_path = Path("logs/api.log")
+log_path.parent.mkdir(parents=True, exist_ok=True)
+
+formatter = logging.Formatter(
+    "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+)
+
+file_handler = logging.FileHandler(log_path, encoding="utf-8")
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+# Remove old handlers
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+
+# Add handlers
+root_logger.addHandler(file_handler)
+root_logger.addHandler(stream_handler)
+
+# Forward uvicorn + fastapi logs to same handlers
+logging.getLogger("uvicorn").handlers = root_logger.handlers
+logging.getLogger("uvicorn.error").handlers = root_logger.handlers
+logging.getLogger("uvicorn.access").handlers = root_logger.handlers
+logging.getLogger("fastapi").handlers = root_logger.handlers
+
+logger = logging.getLogger("wpp-digital-twin")
+
+logger.info("Logging system initialized")
+
+# =========================================================
+# FASTAPI APP
+# =========================================================
+
+app = FastAPI()
+
+logger.info("FastAPI application started")
+
+# =========================================================
+# REQUEST LOGGING MIDDLEWARE
+# =========================================================
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+
+    response = await call_next(request)
+
+    logger.info(f"Response status: {response.status_code}")
+
+    return response
 class ForecastingEngine:
     """ML-based forecasting for wind power."""
     

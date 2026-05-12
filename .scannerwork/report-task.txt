@@ -1,0 +1,6 @@
+projectKey=wpp-digital-twin
+serverUrl=http://localhost:9000
+serverVersion=26.4.0.121862
+dashboardUrl=http://localhost:9000/dashboard?id=wpp-digital-twin
+ceTaskId=f2f2c76c-07cb-4cd9-bbe1-d8a6873818b9
+ceTaskUrl=http://localhost:9000/api/ce/task?id=f2f2c76c-07cb-4cd9-bbe1-d8a6873818b9

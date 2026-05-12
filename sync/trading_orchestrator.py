@@ -26,6 +26,7 @@ from typing import Optional, Dict, Tuple
 import pandas as pd
 import numpy as np
 from web3 import Web3
+from web3.exceptions import Web3Exception
 from dotenv import load_dotenv
 import requests
 
@@ -53,6 +54,11 @@ logger.addHandler(stream_handler)
 
 # Load environment
 load_dotenv()
+
+# Initialize seeded random number generator
+rng = np.random.default_rng(seed=42)
+
+LOG_FILE_PATH = "logs/trading_log.json"
 
 # ============== CONFIGURATION ==============
 
@@ -150,7 +156,7 @@ class TradingOrchestrator:
             abi=self.config.AUCTION_ABI
         )
         
-        logger.info(f"✓ Contracts initialized")
+        logger.info("✓ Contracts initialized")
     
     def forecast_to_energy_tokens(self, forecast_kwh: float) -> int:
         """
@@ -186,7 +192,7 @@ class TradingOrchestrator:
         if not forecast_file.exists():
             logger.warning(f"Forecast file not found: {forecast_file}")
             logger.info("Using synthetic forecast for testing (random 0.5-5 MWh)")
-            return float(np.random.uniform(0.5, 5.0))  # Synthetic: 0.5-5 MWh
+            return float(rng.uniform(0.5, 5.0))  # Synthetic: 0.5-5 MWh
         
         try:
             df = pd.read_csv(forecast_file)
@@ -194,7 +200,7 @@ class TradingOrchestrator:
             # If this is the model-comparison output, fallback to synthetic forecast.
             if not {'timestamp', 'forecast_power'}.issubset(set(df.columns)):
                 logger.warning("Forecast file format is not hourly time series (expected timestamp/forecast_power). Using synthetic forecast.")
-                return float(np.random.uniform(0.5, 5.0))
+                return float(rng.uniform(0.5, 5.0))
 
             # Convert to hourly index and average
             df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -204,14 +210,14 @@ class TradingOrchestrator:
             ts_hour = pd.Timestamp(hour, unit='s')
             if ts_hour not in hourly.index:
                 logger.warning(f"Forecast hour {ts_hour} missing from forecast file; using synthetic fallback.")
-                return float(np.random.uniform(0.5, 5.0))
+                return float(rng.uniform(0.5, 5.0))
 
             forecast_kwh = float(hourly.loc[ts_hour, 'forecast_power'])
             return forecast_kwh / 1000 * 60  # Convert kW to kWh
 
-        except Exception as e:
+        except (ValueError, OSError, KeyError, TypeError, pd.errors.ParserError) as e:
             logger.warning(f"Error loading forecast: {e}")
-            return float(np.random.uniform(0.5, 5.0))
+            return float(rng.uniform(0.5, 5.0))
     
     def mint_hourly_tokens(self, hour: int, energy_forecast_kwh: float) -> Tuple[bool, str]:
         """
@@ -248,13 +254,13 @@ class TradingOrchestrator:
             
             # Send transaction
             tx_hash = self.w3.eth.send_transaction(tx)
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            _ = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             
             logger.info(f"✓ Minted {energy_wh} ENERGY tokens for hour {hour} (tx: {tx_hash.hex()[:8]}...)")
             
             return True, tx_hash.hex()
         
-        except Exception as e:
+        except (AttributeError, ValueError, ConnectionError, Web3Exception) as e:
             logger.error(f"✗ Token minting failed: {e}")
             return False, ""
     
@@ -283,7 +289,7 @@ class TradingOrchestrator:
             
             # Send transaction
             tx_hash = self.w3.eth.send_transaction(tx)
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            _ = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             
             auction_id = self.auction_count + 1
             self.auction_count += 1
@@ -292,7 +298,7 @@ class TradingOrchestrator:
             
             return True, auction_id
         
-        except Exception as e:
+        except (AttributeError, ValueError, ConnectionError, Web3Exception) as e:
             logger.error(f"✗ Auction start failed: {e}")
             return False, None
     
@@ -305,10 +311,10 @@ class TradingOrchestrator:
                 energy_wh
             ).transact({'from': self.w3.eth.accounts[0]})
 
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx)
-            logger.info(f"Minted {energy_wh} Wh to {to_address} for hour {hour}. TX: {receipt.transactionHash.hex()}")
-            return receipt.transactionHash
-        except Exception as e:
+            _ = self.w3.eth.wait_for_transaction_receipt(tx)
+            logger.info(f"Minted {energy_wh} Wh to {to_address} for hour {hour}. TX: {tx.hex()}")
+            return tx
+        except (AttributeError, ValueError, ConnectionError, Web3Exception) as e:
             logger.error(f"Error minting energy tokens: {e}")
             raise
 
@@ -320,10 +326,10 @@ class TradingOrchestrator:
                 energy_wh
             ).transact({'from': self.w3.eth.accounts[0]})
 
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx)
-            logger.info(f"Started auction for {energy_wh} Wh at hour {hour}. TX: {receipt.transactionHash.hex()}")
-            return receipt.transactionHash
-        except Exception as e:
+            _ = self.w3.eth.wait_for_transaction_receipt(tx)
+            logger.info(f"Started auction for {energy_wh} Wh at hour {hour}. TX: {tx.hex()}")
+            return tx
+        except (AttributeError, ValueError, ConnectionError, Web3Exception) as e:
             logger.error(f"Error starting auction: {e}")
             raise
 
@@ -334,10 +340,10 @@ class TradingOrchestrator:
                 auction_id
             ).transact({'from': self.w3.eth.accounts[0]})
 
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx)
-            logger.info(f"Settled auction {auction_id}. TX: {receipt.transactionHash.hex()}")
-            return receipt.transactionHash
-        except Exception as e:
+            _ = self.w3.eth.wait_for_transaction_receipt(tx)
+            logger.info(f"Settled auction {auction_id}. TX: {tx.hex()}")
+            return tx
+        except (AttributeError, ValueError, ConnectionError, Web3Exception) as e:
             logger.error(f"Error settling auction: {e}")
             raise
 
@@ -380,19 +386,19 @@ class TradingOrchestrator:
             event['forecast_kwh'] = forecast_kwh
             tokens = self.forecast_to_energy_tokens(forecast_kwh)
             logger.info(f"→ Forecast: {forecast_kwh:.2f} kWh = {tokens} tokens")
-        except Exception as e:
+        except (AttributeError, ValueError, ConnectionError, Web3Exception, OSError, KeyError, TypeError) as e:
             logger.error(f"✗ Forecast loading failed: {e}")
             event['errors'].append(f"Forecast load error: {str(e)}")
             return event
         
         # Step 2: Mint tokens
         try:
-            success, tx_hash = self.mint_hourly_tokens(hour, forecast_kwh)
+            success, _ = self.mint_hourly_tokens(hour, forecast_kwh)
             if success:
                 event['tokens_minted'] = tokens
             else:
-                raise Exception("Token minting failed")
-        except Exception as e:
+                raise RuntimeError("Token minting failed")
+        except (AttributeError, ValueError, ConnectionError, Web3Exception, RuntimeError) as e:
             logger.error(f"✗ Token minting failed: {e}")
             event['errors'].append(f"Minting error: {str(e)}")
             return event
@@ -404,15 +410,15 @@ class TradingOrchestrator:
                 event['auction_id'] = auction_id
                 event['auction_started'] = True
             else:
-                raise Exception("Auction start failed")
-        except Exception as e:
+                raise RuntimeError("Auction start failed")
+        except (AttributeError, ValueError, ConnectionError, Web3Exception, RuntimeError) as e:
             logger.error(f"✗ Auction start failed: {e}")
             event['errors'].append(f"Auction error: {str(e)}")
             return event
         
         # Step 4: Log state
         self.total_energy_traded += tokens
-        logger.info(f"✓ Hour processed successfully")
+        logger.info("✓ Hour processed successfully")
         logger.info(f"  Total energy in auctions: {self.total_energy_traded} Wh\n")
         
         return event
@@ -434,7 +440,7 @@ class TradingOrchestrator:
                 event = self.process_hour(current_hour)
                 
                 # Save log (JSONL format: one JSON per line)
-                log_path = Path("logs/trading_log.json")
+                log_path = Path(LOG_FILE_PATH)
                 log_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(log_path, 'a') as f:
                     f.write(json.dumps(event) + '\n')
@@ -447,7 +453,7 @@ class TradingOrchestrator:
             except KeyboardInterrupt:
                 logger.info("Stopping trading orchestrator")
                 break
-            except Exception as e:
+            except (AttributeError, ValueError, ConnectionError, Web3Exception, OSError) as e:
                 logger.error(f"Unexpected error in continuous mode: {e}")
                 import time
                 time.sleep(60)  # Retry after 1 minute
@@ -455,14 +461,15 @@ class TradingOrchestrator:
 
 class UserRoleHandler:
     def __init__(self):
-        pass
+        # Placeholder for future dependency injection or configuration
+        self.role_config = None
 
     def handle_producer_workflow(self, input_values):
         """Handles the producer workflow."""
         # Call prediction API
         response = requests.post("http://localhost:8000/predict", json=input_values)
         if response.status_code != 200:
-            raise Exception("Prediction API call failed.")
+            raise RuntimeError("Prediction API call failed.")
 
         prediction = response.json()
         # Logic to list available energy for sale
@@ -517,7 +524,7 @@ def main():
     # Initialize orchestrator
     try:
         orchestrator = TradingOrchestrator()
-    except Exception as e:
+    except (ConnectionError, ValueError, Web3Exception) as e:
         logger.error(f"Failed to initialize orchestrator: {e}")
         sys.exit(1)
     
@@ -531,7 +538,7 @@ def main():
                 event = orchestrator.process_hour(hour)
                 
                 # Save to file (JSONL format: one JSON per line)
-                log_path = Path("logs/trading_log.json")
+                log_path = Path(LOG_FILE_PATH)
                 log_path.parent.mkdir(parents=True, exist_ok=True)
                 
                 with open(log_path, 'a') as f:
@@ -553,7 +560,7 @@ def main():
         event = orchestrator.process_hour()
         
         # Save to file (JSONL format: one JSON per line)
-        log_path = Path("logs/trading_log.json")
+        log_path = Path(LOG_FILE_PATH)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(log_path, 'a') as f:

@@ -1,7 +1,10 @@
 """Bidding service for managing energy bids."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Optional
+from pymongo.errors import PyMongoError
 from database.mongo_client import bids_collection
+
+MONGO_CONN_ERROR = "Error: MongoDB connection not available"
 
 
 def store_bid(user: str, energy: float, price: float) -> Optional[str]:
@@ -17,21 +20,21 @@ def store_bid(user: str, energy: float, price: float) -> Optional[str]:
         Inserted document ID or None if failed
     """
     if bids_collection is None:
-        print("Error: MongoDB connection not available")
+        print(MONGO_CONN_ERROR)
         return None
         
     bid = {
         "user": user,
         "energy": energy,
         "price_per_wh": price,
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.now(timezone.utc)
     }
     
     try:
         result = bids_collection.insert_one(bid)
         print(f"✓ Bid stored: {result.inserted_id}")
         return str(result.inserted_id)
-    except Exception as e:
+    except PyMongoError as e:
         print(f"✗ Error storing bid: {e}")
         return None
 
@@ -44,13 +47,13 @@ def get_all_bids() -> List[Dict]:
         List of bid dictionaries
     """
     if bids_collection is None:
-        print("Error: MongoDB connection not available")
+        print(MONGO_CONN_ERROR)
         return []
         
     try:
         bids = list(bids_collection.find({}, {"_id": 0}))
         return bids
-    except Exception as e:
+    except PyMongoError as e:
         print(f"✗ Error fetching bids: {e}")
         return []
 
@@ -93,13 +96,13 @@ def clear_bids() -> bool:
         True if successful
     """
     if bids_collection is None:
-        print("Error: MongoDB connection not available")
+        print(MONGO_CONN_ERROR)
         return False
         
     try:
         result = bids_collection.delete_many({})
         print(f"✓ Cleared {result.deleted_count} bids")
         return True
-    except Exception as e:
+    except PyMongoError as e:
         print(f"✗ Error clearing bids: {e}")
         return False

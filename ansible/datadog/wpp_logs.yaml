@@ -1,0 +1,10 @@
+logs:
+  - type: file
+    path: "D:/WPPDigitalTwin/logs/api.log"
+    service: wpp-digital-twin-api
+    source: python
+
+  - type: file
+    path: "D:/WPPDigitalTwin/logs/trading_orchestrator.log"
+    service: wpp-trading-engine
+    source: python

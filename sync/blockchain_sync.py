@@ -1,17 +1,13 @@
-"""Entry point for sync.""""""
+"""Entry point for sync.
 
-
-
-
-
-    run_sync()if __name__ == "__main__":from blockchain_sync import run_syncsync/blockchain_sync.py
 Synchronization between MongoDB and blockchain
 """
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +23,7 @@ class BlockchainSync:
             self.records_collection = self.db["records"]
             self._ensure_indexes()
             logger.info("MongoDB connection established successfully.")
-        except Exception as e:
+        except (PyMongoError, ConnectionError) as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
             raise
 
@@ -46,7 +42,7 @@ class BlockchainSync:
             'batch_hash': batch_hash,
             'tx_id': f"0x{'0'*62}{'1'*2}",  # Mock tx ID
             'status': 'confirmed',
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
         
         self.sync_log.append(sync_record)
@@ -77,7 +73,7 @@ class BlockchainSync:
             else:
                 logger.info(f"Data updated in MongoDB for key: {data['key']}")
             return result.upserted_id
-        except Exception as e:
+        except PyMongoError as e:
             logger.error(f"Error transferring data to MongoDB: {e}")
             raise
 
@@ -92,7 +88,7 @@ class BlockchainSync:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx)
             logger.info(f"Data transferred to blockchain. TX: {receipt.transactionHash.hex()}")
             return receipt.transactionHash
-        except Exception as e:
+        except (AttributeError, ValueError, ConnectionError) as e:
             logger.error(f"Error transferring data to blockchain: {e}")
             raise
 

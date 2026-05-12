@@ -22,6 +22,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 # Initialize logger
 logger = logging.getLogger("auth_manager")
+logger.propagate = True
 logging.basicConfig(level=logging.DEBUG)
 
 # Configure logging to file
