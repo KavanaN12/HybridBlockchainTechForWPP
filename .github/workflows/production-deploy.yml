@@ -66,6 +66,12 @@ jobs:
         run: |
           docker images | grep wpp-digital-twin
      
+      - name: Create .env file
+        run: |
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
+          echo "PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}" >> .env
+          echo "KAGGLE_KEY=${{ secrets.KAGGLE_KEY }}" >> .env
+          echo "DB_NAME=wpp_db" >> .env
       - name: Validate Docker Compose
         run: docker compose config
 
