@@ -12596,3 +12596,19 @@
 2026-05-10 21:21:20,372 | INFO | uvicorn.error | Application shutdown complete.
 2026-05-10 21:21:20,377 | INFO | uvicorn.error | Finished server process [1]
 2026-05-10 21:21:20,377 | INFO | uvicorn.error | Finished server process [1]
+2026-05-12 17:13:19,847 | INFO | wpp-digital-twin | Logging system initialized
+2026-05-12 17:13:19,849 | INFO | wpp-digital-twin | FastAPI application started
+2026-05-12 17:13:20,421 | INFO | uvicorn.error | Started server process [1]
+2026-05-12 17:13:20,421 | INFO | uvicorn.error | Started server process [1]
+2026-05-12 17:13:20,423 | INFO | uvicorn.error | Waiting for application startup.
+2026-05-12 17:13:20,423 | INFO | uvicorn.error | Waiting for application startup.
+2026-05-12 17:13:20,425 | INFO | uvicorn.error | Application startup complete.
+2026-05-12 17:13:20,425 | INFO | uvicorn.error | Application startup complete.
+2026-05-12 17:13:20,428 | INFO | uvicorn.error | Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-05-12 17:13:20,428 | INFO | uvicorn.error | Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-05-12 17:14:37,546 | INFO | uvicorn.access | 172.18.0.1:59466 - "GET /docs HTTP/1.1" 200
+2026-05-12 17:14:38,122 | INFO | uvicorn.access | 172.18.0.1:59466 - "GET /openapi.json HTTP/1.1" 200
+2026-05-12 17:14:40,132 | ERROR | ddtrace.internal.writer.writer | failed to send, dropping 2 traces to intake at http://localhost:8126/v0.5/traces: client error (Connect)
+2026-05-12 17:14:48,539 | INFO | wpp-digital-twin | Logging system initialized
+2026-05-12 17:14:48,540 | INFO | wpp-digital-twin | FastAPI application started
+2026-05-12 17:15:23,221 | ERROR | ddtrace.internal.writer.writer | failed to send, dropping 1 traces to intake at http://localhost:8126/v0.5/traces: client error (Connect)

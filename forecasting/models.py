@@ -3,6 +3,11 @@ forecasting/models.py
 ML-based power forecasting models
 """
 
+# Load environment variables from .env
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 from ddtrace import patch_all
 patch_all()
 

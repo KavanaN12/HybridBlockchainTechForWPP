@@ -7,6 +7,9 @@ services:
 
     container_name: wpp-dashboard
 
+    env_file:
+      - .env
+
     ports:
       - "8501:8501"
 
@@ -24,6 +27,9 @@ services:
       dockerfile: Dockerfile.backend
 
     container_name: wpp-api
+
+    env_file:
+      - .env
 
     ports:
       - "8000:8000"
